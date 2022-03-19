@@ -1,7 +1,7 @@
-class AuthenticationService {
+class AuthService {
 
   static newInstance() {
-    return new this(AuthenticationRepository.newInstance());
+    return new this(AuthRepository.newInstance());
   }
 
   constructor(authRepo) {
@@ -9,9 +9,9 @@ class AuthenticationService {
   }
 
   getUnusedRecentAuth() {
-    const enableAuths = this.authRepo.getEnableAuths();
+    const enableAuths = this.authRepo.getActiveAuths();
     if (enableAuths.length > 0) {
-      const enableValidAuth = AuthenticationService.pickFirstValidAuth(enableAuths);
+      const enableValidAuth = AuthService.pickFirstValidAuth(enableAuths);
       if (enableValidAuth) {
         this.authRepo.updateAuthLastUsed(enableValidAuth);
         console.log(`Use authentication object [${enableValidAuth['Username']}] from database..`);
@@ -49,7 +49,7 @@ class AuthenticationService {
 
   static pickFirstValidAuth(enableAuths) {
     for(var i = 0; i < enableAuths.length; i++) {
-      if (AuthenticationService.validAuth(enableAuths[i])) {
+      if (AuthService.validAuth(enableAuths[i])) {
         return enableAuths[i];
       }
     }

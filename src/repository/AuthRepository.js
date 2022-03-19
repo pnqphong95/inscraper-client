@@ -1,17 +1,25 @@
-class AuthenticationRepository {
+const AUTH_STATE = {
+  NEW: 'NEW',
+  ACTIVE: 'ACTIVE',
+  INACTIVE: 'INACTIVE'
+}
+Object.freeze(AUTH_STATE);
+
+class AuthRepository {
 
   static newInstance() {
     return new this();
   }
   
   constructor() {
-    this.Sheet = Config.openContainerFile(); 
+    this.Sheet = Configurer.openContainerFile(); 
     Tamotsu.initialize(this.Sheet);
     this.Authentication = Tamotsu.Table.define({ idColumn: 'Username', sheetName: 'Authentication', rowShift: 1 });
   }
 
   updateAuth(existingAuth, newAuthAttrs) {
-    existingAuth['Instagram ID'] = newAuthAttrs.id;
+    existingAuth['State'] = AUTH_STATE.ACTIVE;
+    existingAuth['Instagram ID'] = newAuthAttrs.userId;
     existingAuth['Last Used'] = new Date().toISOString();
     existingAuth['Expires'] = newAuthAttrs.expires;
     existingAuth['Max-Age'] = newAuthAttrs['Max-Age'];
@@ -25,14 +33,16 @@ class AuthenticationRepository {
     existingAuth.save();
   }
 
-  getEnableAuths() {
-    return this.Authentication.where({ Disable: false })
-      .order(AuthenticationRepository.lastUsedComparator).all();
+  getActiveAuths() {
+    return this.Authentication
+      .where({ State: AUTH_STATE.ACTIVE })
+      .order(AuthRepository.lastUsedComparator).all();
   }
 
   getAll() {
     return this.Authentication
-      .order(AuthenticationRepository.lastUsedComparator).all();
+      .where((auth) => Object.values(AUTH_STATE).includes(auth.State))
+      .order(AuthRepository.lastUsedComparator).all();
   }
 
   static lastUsedComparator(authOne, authTwo) {
