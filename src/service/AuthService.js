@@ -1,11 +1,28 @@
 class AuthService {
 
-  static newInstance() {
-    return new this(AuthRepository.newInstance());
+  static instance() {
+    return new this(Configurer.initInstance('AuthRepository', () => new AuthRepository()));
   }
 
   constructor(authRepo) {
     this.authRepo = authRepo;
+  }
+
+  /**
+   * This is adapter for old tool. Will remove soon.
+   */
+  getUnusedRecentAuthV0() {
+    const auth = this.getUnusedRecentAuth();
+    return {
+      username: auth['Username'],
+      userId: auth['Instagram ID'],
+      requestCookie: auth['Request Cookie'],
+      csrfToken: auth['CSRF Token'],
+      expires: auth['Expires'],
+      last_used: auth['Last Used'],
+      'Max-Age': auth['Max-Age'],
+      active: auth['State'] === 'ACTIVE'
+    };
   }
 
   getUnusedRecentAuth() {
@@ -14,7 +31,7 @@ class AuthService {
       const enableValidAuth = AuthService.pickFirstValidAuth(enableAuths);
       if (enableValidAuth) {
         this.authRepo.updateAuthLastUsed(enableValidAuth);
-        console.log(`Use authentication object [${enableValidAuth['Username']}] from database..`);
+        console.log(`Use authentication [${enableValidAuth['Username']}] from Master Sheet..`);
         return enableValidAuth;
       } 
     }

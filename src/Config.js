@@ -2,28 +2,50 @@
 const _ = LodashGS.load();
 
 // Global variables
-var containerFile;
-var configurationTable;
+var instancePool = {};
+var services = {};
+var settings = { 
+  containerFile: undefined, 
+  externalConfigs: undefined
+};
 
 // Helper functions
 const Configurer = {
   openContainerFile: function() {
-    if (!containerFile) {
-      const containerFileId = this.property('containerFileId');
+    if (!settings.containerFile) {
+      const containerFileId = this.getProp('containerFileId');
       if (containerFileId) {
-        containerFile = SpreadsheetApp.openById(containerFileId);
+        settings.containerFile = SpreadsheetApp.openById(containerFileId);
       } else {
-        containerFile = SpreadsheetApp.getActiveSpreadsheet();
+        settings.containerFile = SpreadsheetApp.getActiveSpreadsheet();
       }
-      console.log(`Re-open Container [${containerFile.getName()}] in new session.`);
+      if (!settings.containerFile) {
+        throw new ConfigurationException('This script must be bounded by a Master Sheet. ' 
+          + 'Or you have to provide your own Master Sheet ID as parameter when initialize.');
+      }
+      console.log(`Opening master sheet [${settings.containerFile.getName()}] in new session..`);
     }
-    return containerFile;
+    return settings.containerFile;
   },
-  property: function(key, val) {
+  setProp: function(key, val) {
     const properties = PropertiesService.getUserProperties();
     if (!val) {
-      return properties.getProperty(key);
+      properties.deleteProperty(key);
+    } else {
+      console.log(`Set ${key}=${val}`);
+      properties.setProperty(key, val);
     }
-    properties.setProperty(key, val);
+  },
+  getProp: function(key) {
+    const properties = PropertiesService.getUserProperties();
+    const propVal = properties.getProperty(key);
+    return propVal;
+  },
+  initInstance: function(beanClass, instanceInitializerCallback) {
+    if (!instancePool[beanClass]) {
+      instancePool[beanClass] = instanceInitializerCallback();
+      console.log(`Configure global instance [${beanClass}]`);
+    }
+    return instancePool[beanClass];
   }
 }

@@ -7,8 +7,8 @@ Object.freeze(AUTH_STATE);
 
 class AuthRepository {
 
-  static newInstance() {
-    return new this();
+  static instance() {
+    return Configurer.initInstance('AuthRepository', () => new AuthRepository());
   }
   
   constructor() {

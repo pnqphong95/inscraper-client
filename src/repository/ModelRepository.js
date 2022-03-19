@@ -7,8 +7,8 @@ Object.freeze(MODEL_STATE);
 
 class ModelRepository {
 
-  static newInstance() {
-    return new this();
+  static instance() {
+    return Configurer.initInstance('ModelRepository', () => new ModelRepository());
   }
   
   constructor() {
