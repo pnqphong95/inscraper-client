@@ -1,5 +1,4 @@
 const MODEL_STATE = {
-  NEW: 'NEW',
   ACTIVE: 'ACTIVE',
   INACTIVE: 'INACTIVE'
 }
@@ -17,14 +16,33 @@ class ModelRepository {
     this.Model = Tamotsu.Table.define({ idColumn: 'Username', sheetName: 'Model', rowShift: 1 });
   }
 
-  activeModels(amount) {
-    const models = this.Model.where({ State: MODEL_STATE.ACTIVE }).all();
-    return amount ? models.slice(0, amount) : models;
+  updateModel(model) {
+    model['Last Updated'] = new Date().toISOString();
+    model.save();
   }
 
-  getNewModels() {
-    return this.Model.where({ State: MODEL_STATE.NEW })
-      .where({ 'Metadata URL': '' }).all(); 
+  getActiveModels(amount) {
+    const result = this.Model.where({ State: MODEL_STATE.ACTIVE })
+      .order(ModelRepository.lastUpdatedComparator).all();
+    return amount ? result.slice(0, amount) : result;
+  }
+
+  getNewModels(amount) {
+    const result = this.Model.where({ State: MODEL_STATE.ACTIVE })
+      .where({ 'Metadata ID': '' })
+      .order(ModelRepository.lastUpdatedComparator).all();
+    return amount ? result.slice(0, amount) : result;
+  }
+
+  static lastUpdatedComparator(modelOne, modelTwo) {
+    if (!modelOne['Last Updated'] && modelTwo['Last Updated']) return -1;
+    if (modelOne['Last Updated'] && !modelTwo['Last Updated']) return 1;
+    if (!modelOne['Last Updated'] && !modelTwo['Last Updated']) return 0;
+    const lastUpdatedModelOne = new Date(modelOne['Last Updated']);
+    const lastUpdatedModelTwo = new Date(modelTwo['Last Updated']);
+    if (lastUpdatedModelOne < lastUpdatedModelTwo) return -1;
+    if (lastUpdatedModelOne > lastUpdatedModelTwo) return 1;
+    return 0;
   }
 
 }

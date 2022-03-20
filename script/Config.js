@@ -6,7 +6,8 @@ var instancePool = {};
 var services = {};
 var settings = { 
   containerFile: undefined, 
-  externalConfigs: undefined
+  externalConfigs: undefined,
+  appFolders: undefined
 };
 
 // Helper functions

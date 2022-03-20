@@ -1,7 +1,10 @@
 class AuthService {
 
   static instance() {
-    return new this(Configurer.initInstance('AuthRepository', () => new AuthRepository()));
+    const serviceInitializer = () => new AuthService(
+      Configurer.initInstance('AuthRepository', () => new AuthRepository())
+    );
+    return Configurer.initInstance('AuthService', serviceInitializer);
   }
 
   constructor(authRepo) {

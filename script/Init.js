@@ -6,6 +6,8 @@ function initialize({ containerId }) {
     // With container id, it loads other configs in container file
     // settings.externalConfigs must be set in order to continue other steps.
     settings.externalConfigs = ExternalConfigService.instance().validateExternalConfigs();
+    settings.appFolders = AppDefaultInitializer.instance().validateAppWorkspace();
+    ModelDirectoryService.instance().setupModelDirectory();
         
     // Other initializing steps
     services.authService = AuthService.instance();

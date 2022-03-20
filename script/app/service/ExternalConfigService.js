@@ -1,7 +1,8 @@
 const REQUIRED_CONFIGS = {
-  loginUrl: 'loginUrl',
-  userUrl: 'userUrl',
-  mediaUrl: 'mediaUrl'
+  loginUrl: '',
+  userUrl: '',
+  mediaUrl: '',
+  rootMediaFolderId: ''
 }
 Object.freeze(REQUIRED_CONFIGS);
 
@@ -12,7 +13,10 @@ Object.freeze(REQUIRED_CONFIGS);
 class ExternalConfigService {
 
   static instance() {
-    return new this(Configurer.initInstance('ExternalConfigRepository', () => new ExternalConfigRepository()));
+    const serviceInitializer = () => new ExternalConfigService(
+      Configurer.initInstance('ExternalConfigRepository', () => new ExternalConfigRepository())
+    );
+    return Configurer.initInstance('ExternalConfigService', serviceInitializer);
   }
 
   constructor(configRepo) {
@@ -20,24 +24,19 @@ class ExternalConfigService {
   }
 
   validateExternalConfigs() {
-    const requiredConfigKeys = Object.values(REQUIRED_CONFIGS);
+    const requiredConfigKeys = Object.keys(REQUIRED_CONFIGS);
     const configObj = {};
     const externalConfigs = this.configRepo.getAll();
     if (!externalConfigs) {
       throw new ConfigurationException(ExternalConfigService.errorMessages.readMasterSheetError);
     }
     for(var i = 0; i < externalConfigs.length; i++) {
-      const require = externalConfigs[i]['Required'];
       const key = externalConfigs[i]['Key'];
       const value = externalConfigs[i]['Value'];
-      if (require && require.toLowerCase() === 'yes') {
-        if (value && value !== '') {
-          configObj[key] = value;
-          _.remove(requiredConfigKeys, (k) => key === k);
-        }
-      } else {
+      if (value && value !== '') {
+        configObj[key] = value;
         _.remove(requiredConfigKeys, (k) => key === k);
-      } 
+      }
     }
     if (requiredConfigKeys.length > 0) {
       throw new ConfigurationException(

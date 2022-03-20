@@ -1,4 +1,8 @@
 {
-  "scriptId": "1ouwZaJ_OdZb5HEfL_wH2NrCDgJhJrt9NR6wSzFY393cp60lC3RBW7FMh",
-  "rootDir": "./script"
+  "scriptId": "1A4wFeaCd1fc8OIQLJa2S4cofHDCHwlOr9KKvG1ufwsBZiCrqwps_ljme",
+  "rootDir": "./script",
+  "filePushOrder": [
+    "script/Config.js",
+    "script/Init.js"
+  ]
 }
