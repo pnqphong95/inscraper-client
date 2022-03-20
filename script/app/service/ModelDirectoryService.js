@@ -27,12 +27,12 @@ class ModelDirectoryService {
     const models = this.modelRepo.getNewModels(1);
     for(var i = 0; i < models.length; i++) {
       const model = models[i];
-      const modelUsername = model['Username'];
       this.setupModelMetadataTemplate(model, metadataFolder);
       this.setupModelPhotoFolder(model, instagramPhotoFolder);
       this.setupModelTrashFolder(model, trashFolder);
       this.modelRepo.updateModel(model);
     }
+    return models;
   }
 
   setupModelMetadataTemplate(model, metadataFolder) {
