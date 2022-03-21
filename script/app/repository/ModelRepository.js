@@ -19,14 +19,13 @@ class ModelRepository {
   updateModel(model) {
     model['Metadata'] = `=HYPERLINK("https://docs.google.com/spreadsheets/d/${model['Metadata ID']}", "View")`;
     model['Photo Folder'] = `=HYPERLINK("https://drive.google.com/drive/folders/${model['Photo Folder ID']}", "Open folder")`;
-    model['Trash Folder'] = `=HYPERLINK("https://drive.google.com/drive/folders/${model['Trash Folder ID']}", "Open folder")`;
     model['Last Updated'] = new Date().toISOString();
     model.save();
   }
 
   getActiveModelHasMetadata(amount) {
     const result = this.Model.where({ State: MODEL_STATE.ACTIVE })
-      // .where((model) => model['Metadata ID'] !== '')
+      .where((model) => model['Metadata ID'] !== '')
       .order(ModelRepository.lastUpdatedComparator).all();
     return amount ? result.slice(0, amount) : result;
   }

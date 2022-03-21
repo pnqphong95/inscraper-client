@@ -1,6 +1,5 @@
 const APP_STORAGE_PATHS = {
   photoFolderPath: 'Models\\InstagramPhoto',
-  trashFolderPath: 'Models\\Trash',
   metadataFolderPath: 'Metadata'
 }
 

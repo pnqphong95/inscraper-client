@@ -23,11 +23,10 @@ class ModelDirectoryService {
   setupModelsDirectory() {
     const metadataFolder = settings.appFolders.Metadata;
     const instagramPhotoFolder = settings.appFolders.InstagramPhoto;
-    const trashFolder = settings.appFolders.Trash;
-    if (!metadataFolder || !instagramPhotoFolder || !trashFolder) {
+    if (!metadataFolder || !instagramPhotoFolder) {
       throw new ConfigurationException(ModelDirectoryService.errorMessages.appFoldersMissing);
     }
-    const models = this.modelRepo.getNewModels(1);
+    const models = this.modelRepo.getNewModels();
     for(var i = 0; i < models.length; i++) {
       this.setupModelDirectory(models[i]);
     }
@@ -37,13 +36,11 @@ class ModelDirectoryService {
   setupModelDirectory(model) {
     const metadataFolder = settings.appFolders.Metadata;
     const instagramPhotoFolder = settings.appFolders.InstagramPhoto;
-    const trashFolder = settings.appFolders.Trash;
-    if (!metadataFolder || !instagramPhotoFolder || !trashFolder) {
+    if (!metadataFolder || !instagramPhotoFolder) {
       throw new ConfigurationException(ModelDirectoryService.errorMessages.appFoldersMissing);
     }
     this.setupModelMetadataTemplate(model, metadataFolder);
     this.setupModelPhotoFolder(model, instagramPhotoFolder);
-    this.setupModelTrashFolder(model, trashFolder);
     this.modelRepo.updateModel(model);
   }
 
@@ -58,13 +55,6 @@ class ModelDirectoryService {
     if (!model['Photo Folder ID'] || model['Photo Folder ID'] === '') {
       const modelPhotoFolder = ModelDirectoryService.createFolderIfNotExist(photoFolder, model['Username']);
       model['Photo Folder ID'] = modelPhotoFolder.getId();
-    }
-  }
-
-  setupModelTrashFolder(model, trashFolder) {
-    if (!model['Trash Folder ID'] || model['Trash Folder ID'] === '') {
-      const modelTrashFolder = ModelDirectoryService.createFolderIfNotExist(trashFolder, model['Username']);
-      model['Trash Folder ID'] = modelTrashFolder.getId();
     }
   }
 
