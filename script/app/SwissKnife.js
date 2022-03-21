@@ -19,5 +19,21 @@ const SwissKnife = {
     }
     if (outChunkCbFunc) outChunkCbFunc(result);
     return result;
+  },
+  runInLoop: function(listItems, cbFunc, { timeout, timeoutCbFunc }) {
+    const result = { success: [], remain: [], error: [] };
+    const dones = [], endTime = timeout || new Date(new Date().getTime() + 4 * 60000);
+    for(var i = 0; i < listItems.length; i++) {
+      if (endTime <= new Date()) {
+        if (timeoutCbFunc) timeoutCbFunc(result);
+        const undones = listItems.filter(item => !dones.includes(item));
+        result.remain = result.remain.concat(undones);
+        break;
+      }
+      const item = listItems[i];
+      cbFunc(item, result, endTime);
+      dones.push(item);
+    }
+    return result;
   }
 }

@@ -25,7 +25,7 @@ class ModelRepository {
 
   getActiveModelHasMetadata(amount) {
     const result = this.Model.where({ State: MODEL_STATE.ACTIVE })
-      .where((model) => model['Metadata ID'] !== '')
+      .where((model) => model['Metadata ID'] !== '' && model['Username'] === 'mymmmne')
       .order(ModelRepository.lastUpdatedComparator).all();
     return amount ? result.slice(0, amount) : result;
   }

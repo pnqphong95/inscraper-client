@@ -10,6 +10,7 @@ function initialize({ containerId }) {
     services.modelDirectoryService = ModelDirectoryService.instance();
     services.authService = AuthService.instance();
     services.modelScrapingService = ModelScrapingService.instance();
+    services.mediaDownloadingService = MediaDownloadingService.instance();
 
     settings.externalConfigs = services.externalConfigService.validateExternalConfigs();
     settings.appFolders = services.appDefaultInitializer.validateAppWorkspace();

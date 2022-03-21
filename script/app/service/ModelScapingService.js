@@ -77,7 +77,7 @@ class ModelScrapingService {
           'Type': media.type,
           'Timestamp': media.taken_at_timestamp,
           'Caption': media.caption,
-          'Download URL': media.source
+          'Download URL': media.fulfilled_source ? media.source : ''
         };
         modelMetadataRepo.createOrUpdate(mediaObj);
         dones.push(media);
