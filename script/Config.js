@@ -7,10 +7,10 @@ var services = {};
 var settings = { 
   containerFile: undefined, 
   externalConfigs: undefined,
-  appFolders: undefined
+  appFolders: undefined,
+  sessionAuth: undefined
 };
 
-// Helper functions
 const Configurer = {
   openContainerFile: function() {
     if (!settings.containerFile) {
@@ -24,7 +24,7 @@ const Configurer = {
         throw new ConfigurationException('This script must be bounded by a Master Sheet. ' 
           + 'Or you have to provide your own Master Sheet ID as parameter when initialize.');
       }
-      console.log(`Opening master sheet [${settings.containerFile.getName()}] in new session..`);
+      console.log(`Opening master sheet [${settings.containerFile.getName()}] ...DONE`);
     }
     return settings.containerFile;
   },
@@ -45,8 +45,18 @@ const Configurer = {
   initInstance: function(beanClass, instanceInitializerCallback) {
     if (!instancePool[beanClass]) {
       instancePool[beanClass] = instanceInitializerCallback();
-      console.log(`Configure global instance [${beanClass}]`);
     }
     return instancePool[beanClass];
+  },
+  sessionAuth: function(retrieveSessionAuthCallback) {
+    if (!settings.sessionAuth) {
+      if (services.authService) {
+        settings.sessionAuth = services.authService.getUnusedRecentAuth();
+      } else {
+        settings.sessionAuth = retrieveSessionAuthCallback();
+      }
+      console.log(`Configure authentication [${settings.sessionAuth['Username']}] ...DONE`);
+    }
+    return settings.sessionAuth;
   }
 }

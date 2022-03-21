@@ -12,11 +12,14 @@ Object.freeze(REQUIRED_CONFIGS);
  */
 class ExternalConfigService {
 
-  static instance() {
-    const serviceInitializer = () => new ExternalConfigService(
+  static delayInitializer() {
+    return new ExternalConfigService(
       Configurer.initInstance('ExternalConfigRepository', () => new ExternalConfigRepository())
     );
-    return Configurer.initInstance('ExternalConfigService', serviceInitializer);
+  }
+
+  static instance() {
+    return Configurer.initInstance('ExternalConfigService', ExternalConfigService.delayInitializer);
   }
 
   constructor(configRepo) {

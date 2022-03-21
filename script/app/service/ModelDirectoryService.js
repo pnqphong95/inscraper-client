@@ -5,11 +5,14 @@ Object.freeze(TEMPLATE_IDS);
 
 class ModelDirectoryService {
 
-  static instance() {
-    const serviceInitializer = () => new ModelDirectoryService(
+  static delayInitializer() {
+    return new ModelDirectoryService(
       Configurer.initInstance('ModelRepository', () => new ModelRepository())
     );
-    return Configurer.initInstance('ModelDirectoryService', serviceInitializer);
+  }
+
+  static instance() {
+    return Configurer.initInstance('ModelDirectoryService', ModelDirectoryService.delayInitializer);
   }
 
   constructor(modelRepo) {
@@ -17,7 +20,7 @@ class ModelDirectoryService {
     this.metadataTemplate = DriveApp.getFileById(TEMPLATE_IDS.metadataTemplateId);
   }
 
-  setupModelDirectory() {
+  setupModelsDirectory() {
     const metadataFolder = settings.appFolders.Metadata;
     const instagramPhotoFolder = settings.appFolders.InstagramPhoto;
     const trashFolder = settings.appFolders.Trash;
@@ -26,13 +29,22 @@ class ModelDirectoryService {
     }
     const models = this.modelRepo.getNewModels(1);
     for(var i = 0; i < models.length; i++) {
-      const model = models[i];
-      this.setupModelMetadataTemplate(model, metadataFolder);
-      this.setupModelPhotoFolder(model, instagramPhotoFolder);
-      this.setupModelTrashFolder(model, trashFolder);
-      this.modelRepo.updateModel(model);
+      this.setupModelDirectory(models[i]);
     }
     return models;
+  }
+
+  setupModelDirectory(model) {
+    const metadataFolder = settings.appFolders.Metadata;
+    const instagramPhotoFolder = settings.appFolders.InstagramPhoto;
+    const trashFolder = settings.appFolders.Trash;
+    if (!metadataFolder || !instagramPhotoFolder || !trashFolder) {
+      throw new ConfigurationException(ModelDirectoryService.errorMessages.appFoldersMissing);
+    }
+    this.setupModelMetadataTemplate(model, metadataFolder);
+    this.setupModelPhotoFolder(model, instagramPhotoFolder);
+    this.setupModelTrashFolder(model, trashFolder);
+    this.modelRepo.updateModel(model);
   }
 
   setupModelMetadataTemplate(model, metadataFolder) {
@@ -40,7 +52,6 @@ class ModelDirectoryService {
       const modelMetadata = ModelDirectoryService.forceCopyNew(this.metadataTemplate, metadataFolder, model['Username']);
       model['Metadata ID'] = modelMetadata.getId();
     }
-    model['Metadata'] = `=HYPERLINK("https://docs.google.com/spreadsheets/d/${model['Metadata ID']}", "View")`;
   }
 
   setupModelPhotoFolder(model, photoFolder) {
@@ -48,7 +59,6 @@ class ModelDirectoryService {
       const modelPhotoFolder = ModelDirectoryService.createFolderIfNotExist(photoFolder, model['Username']);
       model['Photo Folder ID'] = modelPhotoFolder.getId();
     }
-    model['Photo Folder'] = `=HYPERLINK("https://drive.google.com/drive/folders/${model['Photo Folder ID']}", "Open folder")`;
   }
 
   setupModelTrashFolder(model, trashFolder) {
@@ -56,7 +66,6 @@ class ModelDirectoryService {
       const modelTrashFolder = ModelDirectoryService.createFolderIfNotExist(trashFolder, model['Username']);
       model['Trash Folder ID'] = modelTrashFolder.getId();
     }
-    model['Trash Folder'] = `=HYPERLINK("https://drive.google.com/drive/folders/${model['Trash Folder ID']}", "Open folder")`;
   }
 
   static forceCopyNew(fileToCopy, destFolder, newFileName) {
@@ -65,9 +74,9 @@ class ModelDirectoryService {
       const match = matches.next();
       const matchNewName = match.getName() + '_deprecated';
       match.setName(matchNewName);
-      console.log(`[${newFileName}] Existing file ${match.getName()} rename to ${matchNewName}.`);
+      console.log(`[${newFileName}] Rename existing file ${match.getName()} to ${matchNewName} ...DONE`);
     }
-    console.log(`[${newFileName}] Copied ${fileToCopy.getName()} to ${destFolder.getName()}.`);
+    console.log(`[${newFileName}] Copy ${fileToCopy.getName()} to ${destFolder.getName()} ...DONE`);
     return fileToCopy.makeCopy(newFileName, destFolder);
   }
 
@@ -76,7 +85,7 @@ class ModelDirectoryService {
     if (matches.hasNext()) {
       return matches.next();
     }
-    console.log(`[${folderName}] Create new model folder under ${parentFolder.getName()}.`);
+    console.log(`[${folderName}] Create new model folder under ${parentFolder.getName()} ...DONE`);
     return parentFolder.createFolder(folderName);
   }
 

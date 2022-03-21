@@ -6,9 +6,12 @@ const APP_STORAGE_PATHS = {
 
 class AppDefaultInitializer {
 
+  static delayInitializer() {
+    return new AppDefaultInitializer();
+  }
+
   static instance() {
-    const serviceInitializer = () => new AppDefaultInitializer();
-    return Configurer.initInstance('AppDefaultInitializer', serviceInitializer);
+    return Configurer.initInstance('AppDefaultInitializer', AppDefaultInitializer.delayInitializer);
   }
 
   constructor() {}
@@ -51,7 +54,7 @@ class AppDefaultInitializer {
         }
       }
     }
-    console.log(`Standardize app storage structure inside root folder [${root.getName()}]`);
+    console.log(`Verify app directory [${root.getName()}] ...PASSED`);
     return result;
   }
 

@@ -1,14 +1,19 @@
 class AuthService {
 
-  static instance() {
-    const serviceInitializer = () => new AuthService(
-      Configurer.initInstance('AuthRepository', () => new AuthRepository())
+  static delayInitializer() {
+    return new AuthService(
+      Configurer.initInstance('AuthRepository', () => new AuthRepository()),
+      Configurer.initInstance('AuthClient', () => new AuthClient())
     );
-    return Configurer.initInstance('AuthService', serviceInitializer);
   }
 
-  constructor(authRepo) {
+  static instance() {
+    return Configurer.initInstance('AuthService', AuthService.delayInitializer);
+  }
+
+  constructor(authRepo, authClient) {
     this.authRepo = authRepo;
+    this.authClient = authClient;
   }
 
   /**
@@ -34,7 +39,6 @@ class AuthService {
       const enableValidAuth = AuthService.pickFirstValidAuth(enableAuths);
       if (enableValidAuth) {
         this.authRepo.updateAuthLastUsed(enableValidAuth);
-        console.log(`Use authentication [${enableValidAuth['Username']}] from Master Sheet..`);
         return enableValidAuth;
       } 
     }
@@ -42,29 +46,13 @@ class AuthService {
     if (auths.length > 0) {
       const username = auths[0]['Username'];
       const password = auths[0]['Password'];
-      const authObj = this.loginServer(username, password);
+      const authObj = this.authClient.loginServer(username, password);
       if (authObj) {
         this.authRepo.updateAuth(auths[0], authObj);
         return auths[0];
       }
     }
     throw new Error('No auth to pick-up! Please check the config.');
-  }
-
-  loginServer(username, password) {
-    try {
-      const response = UrlFetchApp.fetch(configurationTable.loginUrl, { 
-        method : 'post', contentType: 'application/json',
-        payload: JSON.stringify({ username, password }) 
-      });
-      if (response.getResponseCode() === 200) {
-        console.log(`Successfully authenticate ${username} on server!`);
-        const authStr = response.getContentText();
-        return JSON.parse(authStr);
-      }
-    } catch (error) {
-      console.log(`Unable to authenticate ${username} on server!`, error);
-    }
   }
 
   static pickFirstValidAuth(enableAuths) {

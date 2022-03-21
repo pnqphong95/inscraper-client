@@ -8,14 +8,14 @@ function initialize({ containerId }) {
     services.externalConfigService = ExternalConfigService.instance();
     services.appDefaultInitializer = AppDefaultInitializer.instance();
     services.modelDirectoryService = ModelDirectoryService.instance();
+    services.authService = AuthService.instance();
+    services.modelScrapingService = ModelScrapingService.instance();
 
     settings.externalConfigs = services.externalConfigService.validateExternalConfigs();
     settings.appFolders = services.appDefaultInitializer.validateAppWorkspace();
-    services.modelDirectoryService.setupModelDirectory();
+    
+    Configurer.sessionAuth();
         
-    // Other initializing steps
-    services.authService = AuthService.instance();
-
   } catch (e) {
     console.error(`Failed to initialize Inscraper client!`); throw e;
   }
