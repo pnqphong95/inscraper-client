@@ -16,23 +16,6 @@ class AuthService {
     this.authClient = authClient;
   }
 
-  /**
-   * This is adapter for old tool. Will remove soon.
-   */
-  getUnusedRecentAuthV0() {
-    const auth = this.getUnusedRecentAuth();
-    return {
-      username: auth.Username,
-      userId: auth['Instagram ID'],
-      requestCookie: auth['Request Cookie'],
-      csrfToken: auth['CSRF Token'],
-      expires: auth['Expires'],
-      last_used: auth['Last Used'],
-      'Max-Age': auth['Max-Age'],
-      active: auth['State'] === 'ACTIVE'
-    };
-  }
-
   getUnusedRecentAuth() {
     const enableAuths = this.authRepo.getActiveAuths();
     if (enableAuths.length > 0) {

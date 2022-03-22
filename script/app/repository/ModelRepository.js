@@ -1,9 +1,3 @@
-const MODEL_STATE = {
-  ACTIVE: 'ACTIVE',
-  INACTIVE: 'INACTIVE'
-}
-Object.freeze(MODEL_STATE);
-
 class ModelRepository {
 
   static instance() {
@@ -16,42 +10,71 @@ class ModelRepository {
     this.Model = Tamotsu.Table.define({ idColumn: 'Username', sheetName: 'Model', rowShift: 1 });
   }
 
-  updateModel(model) {
-    this.updateHyperlink(model);
-    model['Last Updated'] = new Date().toISOString();
+  updateModel(model, params) {
+    model['Locked'] = '';
+    this.refreshUrl(model);
+    if (params) {
+      if (params.locked === undefined || !params.locked) {
+        model['Locked'] = '';
+      } else {
+        model['Locked'] = 'YES';
+      }
+      if (params.lastUpdated) {
+        model['Last Updated'] = new Date().toISOString();
+      }
+      if (params.lastDownloaded) {
+        model['Last Downloaded'] = new Date().toISOString();
+      }
+    }
     model.save();
   }
 
-  updateHyperlink(model) {
+  refreshUrl(model) {
     model['Metadata'] = `=HYPERLINK("https://docs.google.com/spreadsheets/d/${model['Metadata ID']}", "View")`;
     model['Photo Folder'] = `=HYPERLINK("https://drive.google.com/drive/folders/${model['Photo Folder ID']}", "Open folder")`;
   }
 
-  getActiveModelHasMetadata(amount) {
-    const result = this.Model.where({ State: MODEL_STATE.ACTIVE })
-      .where((model) => model['Metadata ID'] !== '')
+  getActiveUnlockedModels(amount) {
+    const models = this.Model
+      .where(model => ModelRepository.isActiveAndUnlocked(model))
       .order(ModelRepository.lastUpdatedComparator).all();
-    return amount ? result.slice(0, amount) : result;
+    return amount ? models.slice(0, amount) : models;
   }
 
-  getActiveModelHasMetadataOrderByLastDownload(amount) {
-    const result = this.Model.where({ State: MODEL_STATE.ACTIVE })
-      .where((model) => model['Metadata ID'] !== '')
+  getModelsNotSetup(amount) {
+    const models = this.Model
+      .where(model => ModelRepository.isActiveAndUnlocked(model))
+      .where(model => !ModelRepository.isModelSetupDone(model))
+      .order(ModelRepository.lastUpdatedComparator).all();
+    return amount ? models.slice(0, amount) : models;
+  }
+
+  getReadyToDownloadModels(amount) {
+    const models = this.Model.where(model => ModelRepository.readyToDownload(model))
       .order(ModelRepository.lastDownloadedComparator).all();
-    return amount ? result.slice(0, amount) : result;
+    return amount ? models.slice(0, amount) : models.slice(0, 5);
   }
 
-  getActiveModels(amount) {
-    const result = this.Model.where({ State: MODEL_STATE.ACTIVE })
+  getReadyToScrapeModels(amount) {
+    const models = this.Model.where(model => ModelRepository.readyToScrape(model))
       .order(ModelRepository.lastUpdatedComparator).all();
-    return amount ? result.slice(0, amount) : result;
+    return amount ? models.slice(0, amount) : models.slice(0, 5);
   }
 
-  getNewModels(amount) {
-    const result = this.Model.where({ State: MODEL_STATE.ACTIVE })
-      .where({ 'Metadata ID': '' })
-      .order(ModelRepository.lastUpdatedComparator).all();
-    return amount ? result.slice(0, amount) : result;
+  static readyToDownload(model) {
+    return ModelRepository.readyToScrape(model) && model['Photo Folder ID'] !== '';
+  }
+
+  static readyToScrape(model) {
+    return ModelRepository.isActiveAndUnlocked(model) && model['Metadata ID'] !== '';
+  }
+
+  static isActiveAndUnlocked(model) {
+    return model['Inactive'] === '' && model['Locked'] === '';
+  }
+
+  static isModelSetupDone(model) {
+    return model['Metadata ID'] !== '' && model['Photo Folder ID'] !== '';
   }
 
   static lastUpdatedComparator(modelOne, modelTwo) {

@@ -12,7 +12,7 @@ var settings = {
 };
 var defaultSettings = {
   externalConfigs: {
-    downloadTimeout: 300000
+    timeout: 300000
   }
 }
 
@@ -63,5 +63,10 @@ const Configurer = {
       console.log(`Configure authentication [${settings.sessionAuth.Username}] ...DONE`);
     }
     return settings.sessionAuth;
+  },
+  constructTimeout: function() {
+    const configuredTimeout = settings.externalConfigs.executionTimeout;
+    const defaultTimeout = defaultSettings.externalConfigs.executionTimeout;
+    return new Date(new Date().getTime() + Number(configuredTimeout || defaultTimeout));
   }
 }

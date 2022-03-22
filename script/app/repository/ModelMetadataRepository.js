@@ -12,16 +12,16 @@ class ModelMetadataRepository {
   }
 
   createOrUpdate(mediaObj) {
-    this.updateHyperlink(mediaObj);
+    this.refreshUrl(mediaObj);
     this.Media.createOrUpdate(mediaObj);
   }
 
   batchCreate(mediaObjs) {
-    mediaObjs.forEach(i => this.updateHyperlink(i));
+    mediaObjs.forEach(i => this.refreshUrl(i));
     this.Media.batchCreate(mediaObjs);
   }
 
-  updateHyperlink(mediaObj) {
+  refreshUrl(mediaObj) {
     mediaObj['Post'] = `=HYPERLINK("https://www.instagram.com/p/" & "${mediaObj['Short Code']}"; "View")`;
     if (mediaObj['Drive ID']) {
       mediaObj['Drive URL'] = `=HYPERLINK("https://drive.google.com/file/d/" & "${mediaObj['Drive ID']}"; "View")`;

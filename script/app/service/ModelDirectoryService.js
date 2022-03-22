@@ -20,21 +20,27 @@ class ModelDirectoryService {
     this.metadataTemplate = DriveApp.getFileById(TEMPLATE_IDS.metadataTemplateId);
   }
 
-  setupModelsDirectory(isRescan) {
+  setupModelsDirectory({ rescanAll, modelCount }) {
     const metadataFolder = settings.appFolders.Metadata;
     const instagramPhotoFolder = settings.appFolders.InstagramPhoto;
     if (!metadataFolder || !instagramPhotoFolder) {
       throw new ConfigurationException(ModelDirectoryService.errorMessages.appFoldersMissing);
     }
-    const models = isRescan ? this.modelRepo.getActiveModels() : this.modelRepo.getNewModels();
-    for(var i = 0; i < models.length; i++) {
-      if (isRescan) {
-        this.scanModelDirectory(models[i]);
+    var models;
+    try {
+      if (rescanAll) {
+        models = this.modelRepo.getActiveUnlockedModels(modelCount);
+        SwissKnife.runInLoop(models, model => this.modelRepo.updateModel(model, { locked: true }), {});
+        SwissKnife.runInLoop(models, model => this.scanModelDirectory(model), {});
       } else {
-        this.setupModelDirectory(models[i]);
+        models = this.modelRepo.getModelsNotSetup(modelCount);
+        SwissKnife.runInLoop(models, model => this.modelRepo.updateModel(model, { locked: true }), {});
+        SwissKnife.runInLoop(models, model => this.setupModelDirectory(model), {});
       }
+      return models;
+    } finally {
+      SwissKnife.runInLoop(models, model => this.modelRepo.updateModel(model, { locked: false }), {});
     }
-    return models;
   }
 
   setupModelDirectory(model) {
@@ -45,7 +51,6 @@ class ModelDirectoryService {
     }
     this.setupModelMetadataTemplate(model, metadataFolder);
     this.setupModelPhotoFolder(model, instagramPhotoFolder);
-    this.modelRepo.updateModel(model);
   }
 
   scanModelDirectory(model) {
@@ -57,18 +62,21 @@ class ModelDirectoryService {
     const modelMetadata = metadataFolder.getFilesByName(model.Username);
     if (modelMetadata.hasNext()) {
       model['Metadata ID'] = modelMetadata.next().getId();
+      model['Last Updated'] = new Date().toISOString();
     }
     const modelPhotoFolder = instagramPhotoFolder.getFoldersByName(model.Username);
     if (modelPhotoFolder.hasNext()) {
       model['Photo Folder ID'] = modelPhotoFolder.next().getId();
+      model['Last Updated'] = new Date().toISOString();
     }
-    this.modelRepo.updateModel(model);
+    console.log(`[${model.Username}] Check Metadata and Photo folder are up-to-date ...DONE`);
   }
 
   setupModelMetadataTemplate(model, metadataFolder) {
     if (!model['Metadata ID'] || model['Metadata ID'] === '') {
       const modelMetadata = ModelDirectoryService.forceCopyNew(this.metadataTemplate, metadataFolder, model.Username);
       model['Metadata ID'] = modelMetadata.getId();
+      model['Last Updated'] = new Date().toISOString();
     }
   }
 
@@ -76,6 +84,7 @@ class ModelDirectoryService {
     if (!model['Photo Folder ID'] || model['Photo Folder ID'] === '') {
       const modelPhotoFolder = ModelDirectoryService.createFolderIfNotExist(photoFolder, model.Username);
       model['Photo Folder ID'] = modelPhotoFolder.getId();
+      model['Last Updated'] = new Date().toISOString();
     }
   }
 
@@ -85,9 +94,9 @@ class ModelDirectoryService {
       const match = matches.next();
       const matchNewName = match.getName() + '_deprecated';
       match.setName(matchNewName);
-      console.log(`[${newFileName}] Rename existing file ${match.getName()} to ${matchNewName} ...DONE`);
+      console.log(`[${newFileName}] Found existing file ${match.getName()}, rename to ${matchNewName} ...DONE`);
     }
-    console.log(`[${newFileName}] Copy ${fileToCopy.getName()} to ${destFolder.getName()} ...DONE`);
+    console.log(`[${newFileName}] Clone new ${fileToCopy.getName()} to ${destFolder.getName()} ...DONE`);
     return fileToCopy.makeCopy(newFileName, destFolder);
   }
 
@@ -96,7 +105,7 @@ class ModelDirectoryService {
     if (matches.hasNext()) {
       return matches.next();
     }
-    console.log(`[${folderName}] Create new model folder under ${parentFolder.getName()} ...DONE`);
+    console.log(`[${folderName}] Create new photo folder under ${parentFolder.getName()} ...DONE`);
     return parentFolder.createFolder(folderName);
   }
 

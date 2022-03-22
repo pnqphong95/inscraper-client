@@ -13,17 +13,13 @@ class MediaDownloadingService {
   }
 
   download(modelCount) {
-    const downloadTimeout = settings.externalConfigs.downloadTimeout;
-    const defaultTimeout = defaultSettings.externalConfigs.downloadTimeout;
-    const timeout = new Date(new Date().getTime() + Number(downloadTimeout || defaultTimeout));
-    const models = this.modelRepo.getActiveModelHasMetadataOrderByLastDownload(modelCount);
+    const timeout = Configurer.constructTimeout();
+    const models = this.modelRepo.getReadyToDownloadModels(modelCount);
     console.log(`Download medias for models: ${models.map(i => i.Username)}`);
     SwissKnife.runInLoop(models, (model, index, collector) => {
       const successModel = this.downloadModelMedia(model, timeout);
       if (successModel) {
-        this.modelRepo.updateHyperlink(model);
-        model['Last Downloaded'] = new Date().toISOString();
-        model.save();
+        this.modelRepo.updateModel(successModel, { lastDownloaded: true });
         collector.success.push(successModel);
       }
     }, { timeout });
@@ -58,7 +54,7 @@ class MediaDownloadingService {
           if (resp.getResponseCode() === 200) {
             const mediaFile = photoFolder.createFile(resp.getBlob());
             workingMedias[i]['Drive ID'] = mediaFile.getId();
-            metadataRepo.updateHyperlink(workingMedias[i]); workingMedias[i].save();
+            metadataRepo.refreshUrl(workingMedias[i]); workingMedias[i].save();
             collector.success.push(workingMedias[i]);
           } else {
             collector.error.push(workingMedias[i]);
@@ -76,7 +72,7 @@ class MediaDownloadingService {
   saveDriveIdToExistingMedia(metadataRepo, existingMedias, timeout) {
     return SwissKnife.runCallbackInChunk(existingMedias, (collector, workingMedias) => {
       const result = SwissKnife.runInLoop(workingMedias, (media, i, collector) => {
-        metadataRepo.updateHyperlink(media); media.save();
+        metadataRepo.refreshUrl(media); media.save();
         collector.success.push(media);
       }, {});
       collector.success = collector.success.concat(result.success);
