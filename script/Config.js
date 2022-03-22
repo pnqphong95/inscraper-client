@@ -45,6 +45,7 @@ const Configurer = {
   initInstance: function(beanClass, instanceInitializerCallback) {
     if (!instancePool[beanClass]) {
       instancePool[beanClass] = instanceInitializerCallback();
+      console.log(`Configure service instance [${beanClass}]`);
     }
     return instancePool[beanClass];
   },

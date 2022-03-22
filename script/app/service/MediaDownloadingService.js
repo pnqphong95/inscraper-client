@@ -25,6 +25,10 @@ class MediaDownloadingService {
         // Existing file will be ignored and count as download success
         downloadResult.success = downloadResult.success.concat(partitioned.ignores);
         if (downloadResult.success.length === medias.length) {
+          SwissKnife.runInLoop(downloadResult.success, (model) => {
+            modelMetadataRepo.updateHyperlink(model);
+            model.save();
+          }, { timeout: endTime });
           this.modelRepo.updateModel(model);
         }
       }

@@ -20,15 +20,19 @@ class ModelDirectoryService {
     this.metadataTemplate = DriveApp.getFileById(TEMPLATE_IDS.metadataTemplateId);
   }
 
-  setupModelsDirectory() {
+  setupModelsDirectory(isRescan) {
     const metadataFolder = settings.appFolders.Metadata;
     const instagramPhotoFolder = settings.appFolders.InstagramPhoto;
     if (!metadataFolder || !instagramPhotoFolder) {
       throw new ConfigurationException(ModelDirectoryService.errorMessages.appFoldersMissing);
     }
-    const models = this.modelRepo.getNewModels();
+    const models = isRescan ? this.modelRepo.getActiveModels() : this.modelRepo.getNewModels();
     for(var i = 0; i < models.length; i++) {
-      this.setupModelDirectory(models[i]);
+      if (isRescan) {
+        this.scanModelDirectory(models[i]);
+      } else {
+        this.setupModelDirectory(models[i]);
+      }
     }
     return models;
   }
@@ -41,6 +45,23 @@ class ModelDirectoryService {
     }
     this.setupModelMetadataTemplate(model, metadataFolder);
     this.setupModelPhotoFolder(model, instagramPhotoFolder);
+    this.modelRepo.updateModel(model);
+  }
+
+  scanModelDirectory(model) {
+    const metadataFolder = settings.appFolders.Metadata;
+    const instagramPhotoFolder = settings.appFolders.InstagramPhoto;
+    if (!metadataFolder || !instagramPhotoFolder) {
+      throw new ConfigurationException(ModelDirectoryService.errorMessages.appFoldersMissing);
+    }
+    const modelMetadata = metadataFolder.getFilesByName(model['Username']);
+    if (modelMetadata.hasNext()) {
+      model['Metadata ID'] = modelMetadata.next().getId();
+    }
+    const modelPhotoFolder = instagramPhotoFolder.getFoldersByName(model['Username']);
+    if (modelPhotoFolder.hasNext()) {
+      model['Photo Folder ID'] = modelPhotoFolder.next().getId();
+    }
     this.modelRepo.updateModel(model);
   }
 
