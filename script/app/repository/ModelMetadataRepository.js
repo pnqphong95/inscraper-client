@@ -1,7 +1,7 @@
 class ModelMetadataRepository {
 
   static instance(model) {
-    return Configurer.initInstance(`ModelMetadataRepository_${model['Username']}`, 
+    return Configurer.initInstance(`ModelMetadataRepository_${model.Username}`, 
       () => new ModelMetadataRepository(model));
   }
   
@@ -14,6 +14,11 @@ class ModelMetadataRepository {
   createOrUpdate(mediaObj) {
     this.updateHyperlink(mediaObj);
     this.Media.createOrUpdate(mediaObj);
+  }
+
+  batchCreate(mediaObjs) {
+    mediaObjs.forEach(i => this.updateHyperlink(i));
+    this.Media.batchCreate(mediaObjs);
   }
 
   updateHyperlink(mediaObj) {

@@ -30,16 +30,16 @@ class ModelScrapingService {
       for (var i = 0; i < responses.length; i++) {
         if (responses[i].getResponseCode() === 200) {
           models[i].scrapeResponse = JSON.parse(responses[i].getContentText());
-          console.log(`[${models[i]['Username']}] Scrape model metadata ...DONE. ` 
+          console.log(`[${models[i].Username}] Scrape model metadata ...DONE. ` 
             + `Found ${models[i].scrapeResponse.data.length} new medias.`);
           result.success.push(models[i]);
         } else {
-          console.log(`[${models[i]['Username']}] Scrape model metadata ...FAILED`);
+          console.log(`[${models[i].Username}] Scrape model metadata ...FAILED`);
           result.error.push(models[i]);
         }
       }
     } catch (e) {
-      console.log(`${JSON.stringify(models.map(i => i['Username']))} Scrape model metadata ...FAILED`, e);
+      console.log(`${JSON.stringify(models.map(i => i.Username))} Scrape model metadata ...FAILED`, e);
       result.error = result.error.concat(models);
     }
     return result;
@@ -69,23 +69,24 @@ class ModelScrapingService {
     const modelMetadataRepo = ModelMetadataRepository.instance(model);
     const medias = model.scrapeResponse.data, dones = []; var undones = [];
     try {
+      const mediaObjs = [];
       for (var i = 0; i < medias.length; i++) {
         const media = medias[i];
-        const mediaObj = {
+        mediaObjs.push({
           'Media ID': media.id,
           'Short Code': media.shortcode,
           'Type': media.type,
           'Timestamp': media.taken_at_timestamp,
           'Caption': media.caption,
           'Download URL': media.fulfilled_source ? media.source : ''
-        };
-        modelMetadataRepo.createOrUpdate(mediaObj);
+        });
         dones.push(media);
       }
-      console.log(`[${model['Username']}] Store ${dones.length}/${medias.length} ...DONE`);
+      modelMetadataRepo.batchCreate(mediaObjs);
+      console.log(`[${model.Username}] Store ${dones.length}/${medias.length} ...DONE`);
     } catch (e) {
       undones = medias.filter(item => !dones.includes(item));
-      console.log(`[${model['Username']}] Store ${dones.length}/${medias.length}. Remaining: ${undones.length}`);
+      console.log(`[${model.Username}] Store ${dones.length}/${medias.length}. Remaining: ${undones.length}`);
     }
     return { model, dones, undones };
   }
@@ -94,7 +95,7 @@ class ModelScrapingService {
     const sessionAuth = Configurer.sessionAuth();
     const mediaCount = model['Timeline Media Count'] || 0;
     return {
-      url: `${settings.externalConfigs.userUrl}/${model['Username']}`,
+      url: `${settings.externalConfigs.userUrl}/${model.Username}`,
       method: 'post',
       contentType: 'application/json',
       payload: Utilities.jsonStringify({

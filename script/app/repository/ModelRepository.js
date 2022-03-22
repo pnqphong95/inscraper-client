@@ -17,16 +17,27 @@ class ModelRepository {
   }
 
   updateModel(model) {
-    model['Metadata'] = `=HYPERLINK("https://docs.google.com/spreadsheets/d/${model['Metadata ID']}", "View")`;
-    model['Photo Folder'] = `=HYPERLINK("https://drive.google.com/drive/folders/${model['Photo Folder ID']}", "Open folder")`;
+    this.updateHyperlink(model);
     model['Last Updated'] = new Date().toISOString();
     model.save();
+  }
+
+  updateHyperlink(model) {
+    model['Metadata'] = `=HYPERLINK("https://docs.google.com/spreadsheets/d/${model['Metadata ID']}", "View")`;
+    model['Photo Folder'] = `=HYPERLINK("https://drive.google.com/drive/folders/${model['Photo Folder ID']}", "Open folder")`;
   }
 
   getActiveModelHasMetadata(amount) {
     const result = this.Model.where({ State: MODEL_STATE.ACTIVE })
       .where((model) => model['Metadata ID'] !== '')
       .order(ModelRepository.lastUpdatedComparator).all();
+    return amount ? result.slice(0, amount) : result;
+  }
+
+  getActiveModelHasMetadataOrderByLastDownload(amount) {
+    const result = this.Model.where({ State: MODEL_STATE.ACTIVE })
+      .where((model) => model['Metadata ID'] !== '')
+      .order(ModelRepository.lastDownloadedComparator).all();
     return amount ? result.slice(0, amount) : result;
   }
 
@@ -51,6 +62,17 @@ class ModelRepository {
     const lastUpdatedModelTwo = new Date(modelTwo['Last Updated']);
     if (lastUpdatedModelOne < lastUpdatedModelTwo) return -1;
     if (lastUpdatedModelOne > lastUpdatedModelTwo) return 1;
+    return 0;
+  }
+
+  static lastDownloadedComparator(modelOne, modelTwo) {
+    if (!modelOne['Last Downloaded'] && modelTwo['Last Downloaded']) return -1;
+    if (modelOne['Last Downloaded'] && !modelTwo['Last Downloaded']) return 1;
+    if (!modelOne['Last Downloaded'] && !modelTwo['Last Downloaded']) return 0;
+    const lastDownloadedModelOne = new Date(modelOne['Last Downloaded']);
+    const lastDownloadedModelTwo = new Date(modelTwo['Last Downloaded']);
+    if (lastDownloadedModelOne < lastDownloadedModelTwo) return -1;
+    if (lastDownloadedModelOne > lastDownloadedModelTwo) return 1;
     return 0;
   }
 
