@@ -10,6 +10,11 @@ var settings = {
   appFolders: undefined,
   sessionAuth: undefined
 };
+var defaultSettings = {
+  externalConfigs: {
+    downloadTimeout: 300000
+  }
+}
 
 const Configurer = {
   openContainerFile: function() {
@@ -45,7 +50,6 @@ const Configurer = {
   initInstance: function(beanClass, instanceInitializerCallback) {
     if (!instancePool[beanClass]) {
       instancePool[beanClass] = instanceInitializerCallback();
-      console.log(`Configure service instance [${beanClass}]`);
     }
     return instancePool[beanClass];
   },
@@ -56,7 +60,7 @@ const Configurer = {
       } else {
         settings.sessionAuth = retrieveSessionAuthCallback();
       }
-      console.log(`Configure authentication [${settings.sessionAuth['Username']}] ...DONE`);
+      console.log(`Configure authentication [${settings.sessionAuth.Username}] ...DONE`);
     }
     return settings.sessionAuth;
   }

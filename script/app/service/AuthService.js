@@ -22,7 +22,7 @@ class AuthService {
   getUnusedRecentAuthV0() {
     const auth = this.getUnusedRecentAuth();
     return {
-      username: auth['Username'],
+      username: auth.Username,
       userId: auth['Instagram ID'],
       requestCookie: auth['Request Cookie'],
       csrfToken: auth['CSRF Token'],
@@ -44,8 +44,8 @@ class AuthService {
     }
     const auths = this.authRepo.getAll();
     if (auths.length > 0) {
-      const username = auths[0]['Username'];
-      const password = auths[0]['Password'];
+      const username = auths[0].Username;
+      const password = auths[0].Password;
       const authObj = this.authClient.loginServer(username, password);
       if (authObj) {
         this.authRepo.updateAuth(auths[0], authObj);

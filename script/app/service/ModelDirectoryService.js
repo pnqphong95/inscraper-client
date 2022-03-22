@@ -54,11 +54,11 @@ class ModelDirectoryService {
     if (!metadataFolder || !instagramPhotoFolder) {
       throw new ConfigurationException(ModelDirectoryService.errorMessages.appFoldersMissing);
     }
-    const modelMetadata = metadataFolder.getFilesByName(model['Username']);
+    const modelMetadata = metadataFolder.getFilesByName(model.Username);
     if (modelMetadata.hasNext()) {
       model['Metadata ID'] = modelMetadata.next().getId();
     }
-    const modelPhotoFolder = instagramPhotoFolder.getFoldersByName(model['Username']);
+    const modelPhotoFolder = instagramPhotoFolder.getFoldersByName(model.Username);
     if (modelPhotoFolder.hasNext()) {
       model['Photo Folder ID'] = modelPhotoFolder.next().getId();
     }
@@ -67,14 +67,14 @@ class ModelDirectoryService {
 
   setupModelMetadataTemplate(model, metadataFolder) {
     if (!model['Metadata ID'] || model['Metadata ID'] === '') {
-      const modelMetadata = ModelDirectoryService.forceCopyNew(this.metadataTemplate, metadataFolder, model['Username']);
+      const modelMetadata = ModelDirectoryService.forceCopyNew(this.metadataTemplate, metadataFolder, model.Username);
       model['Metadata ID'] = modelMetadata.getId();
     }
   }
 
   setupModelPhotoFolder(model, photoFolder) {
     if (!model['Photo Folder ID'] || model['Photo Folder ID'] === '') {
-      const modelPhotoFolder = ModelDirectoryService.createFolderIfNotExist(photoFolder, model['Username']);
+      const modelPhotoFolder = ModelDirectoryService.createFolderIfNotExist(photoFolder, model.Username);
       model['Photo Folder ID'] = modelPhotoFolder.getId();
     }
   }
