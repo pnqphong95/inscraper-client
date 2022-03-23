@@ -29,17 +29,15 @@ class ModelDirectoryService {
     var models;
     try {
       if (rescanAll) {
-        models = this.modelRepo.getActiveUnlockedModels(modelCount);
-        SwissKnife.runInLoop(models, model => this.modelRepo.updateModel(model, { locked: true }), {});
-        SwissKnife.runInLoop(models, model => this.scanModelDirectory(model), {});
+        models = this.modelRepo.getActiveModels(modelCount); this.modelRepo.lockModels(models);
+        SwissKnife.executeLoop(models, model => this.scanModelDirectory(model), {});
       } else {
-        models = this.modelRepo.getModelsNotSetup(modelCount);
-        SwissKnife.runInLoop(models, model => this.modelRepo.updateModel(model, { locked: true }), {});
-        SwissKnife.runInLoop(models, model => this.setupModelDirectory(model), {});
+        models = this.modelRepo.getModelsNotSetup(modelCount); this.modelRepo.lockModels(models);
+        SwissKnife.executeLoop(models, model => this.setupModelDirectory(model), {});
       }
       return models;
     } finally {
-      SwissKnife.runInLoop(models, model => this.modelRepo.updateModel(model, { locked: false }), {});
+      this.modelRepo.unlockModels(models);
     }
   }
 
@@ -51,6 +49,7 @@ class ModelDirectoryService {
     }
     this.setupModelMetadataTemplate(model, metadataFolder);
     this.setupModelPhotoFolder(model, instagramPhotoFolder);
+    this.modelRepo.updateModel(model);
   }
 
   scanModelDirectory(model) {
@@ -61,7 +60,8 @@ class ModelDirectoryService {
     }
     const modelMetadata = metadataFolder.getFilesByName(model.Username);
     if (modelMetadata.hasNext()) {
-      model['Metadata ID'] = modelMetadata.next().getId();
+      const modelMetadataId = modelMetadata.next().getId();
+      model['Metadata ID'] = modelMetadataId;
       model['Last Updated'] = new Date().toISOString();
     }
     const modelPhotoFolder = instagramPhotoFolder.getFoldersByName(model.Username);
@@ -69,6 +69,7 @@ class ModelDirectoryService {
       model['Photo Folder ID'] = modelPhotoFolder.next().getId();
       model['Last Updated'] = new Date().toISOString();
     }
+    this.modelRepo.updateModel(model);
     console.log(`[${model.Username}] Check Metadata and Photo folder are up-to-date ...DONE`);
   }
 

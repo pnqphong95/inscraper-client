@@ -5,20 +5,15 @@ class ModelRepository {
   }
   
   constructor() {
+    this.propertyService = Configurer.documentProps();
     this.Sheet = Configurer.openContainerFile(); 
     Tamotsu.initialize(this.Sheet);
     this.Model = Tamotsu.Table.define({ idColumn: 'Username', sheetName: 'Model', rowShift: 1 });
   }
 
   updateModel(model, params) {
-    model['Locked'] = '';
     this.refreshUrl(model);
     if (params) {
-      if (params.locked === undefined || !params.locked) {
-        model['Locked'] = '';
-      } else {
-        model['Locked'] = 'YES';
-      }
       if (params.lastUpdated) {
         model['Last Updated'] = new Date().toISOString();
       }
@@ -34,43 +29,80 @@ class ModelRepository {
     model['Photo Folder'] = `=HYPERLINK("https://drive.google.com/drive/folders/${model['Photo Folder ID']}", "Open folder")`;
   }
 
-  getActiveUnlockedModels(amount) {
+  getActiveModels(amount) {
     const models = this.Model
-      .where(model => ModelRepository.isActiveAndUnlocked(model))
+      .where(model => !this.isModelLock(model))
+      .where(model => ModelRepository.isActive(model))
       .order(ModelRepository.lastUpdatedComparator).all();
     return amount ? models.slice(0, amount) : models;
   }
 
   getModelsNotSetup(amount) {
     const models = this.Model
-      .where(model => ModelRepository.isActiveAndUnlocked(model))
+      .where(model => !this.isModelLock(model))
+      .where(model => ModelRepository.isActive(model))
       .where(model => !ModelRepository.isModelSetupDone(model))
       .order(ModelRepository.lastUpdatedComparator).all();
     return amount ? models.slice(0, amount) : models;
   }
 
   getReadyToDownloadModels(amount) {
-    const models = this.Model.where(model => ModelRepository.readyToDownload(model))
+    const models = this.Model
+      .where(model => !this.isModelLock(model))
+      .where(model => ModelRepository.readyToDownload(model))
       .order(ModelRepository.lastDownloadedComparator).all();
-    return amount ? models.slice(0, amount) : models.slice(0, 5);
+    return amount ? models.slice(0, amount) : models.slice(0, 10);
   }
 
   getReadyToScrapeModels(amount) {
-    const models = this.Model.where(model => ModelRepository.readyToScrape(model))
+    const models = this.Model
+      .where(model => !this.isModelLock(model))
+      .where(model => ModelRepository.readyToScrape(model))
       .order(ModelRepository.lastUpdatedComparator).all();
     return amount ? models.slice(0, amount) : models.slice(0, 5);
   }
 
+  lockModels(models) {
+    const containerFileId = this.propertyService.containerFileId;
+    const props = this.propertyService.props;
+    const lockModelProps = {}, modelUsernames = [];
+    models.forEach(model => {
+      lockModelProps[`${containerFileId}:Model_Lock:${model.Username}`] = true;
+      modelUsernames.push(model.Username);
+    });
+    console.log(`[${this.propertyService.scope}] Lock ${modelUsernames.length} ` 
+      + `models for processing: ${modelUsernames}`);
+    props.setProperties(lockModelProps);
+  }
+
+  unlockModels(models) {
+    const containerFileId = this.propertyService.containerFileId;
+    const props = this.propertyService.props;
+    const modelUsernames = [];
+    models.forEach(model => {
+      props.deleteProperty(`${containerFileId}:Model_Lock:${model.Username}`);
+      modelUsernames.push(model.Username);
+    });
+    console.log(`[${this.propertyService.scope}] ` 
+      + `Unlocked ${modelUsernames.length} models: ${modelUsernames}`);
+  }
+
+  isModelLock(model) {
+    const containerFileId = this.propertyService.containerFileId;
+    const props = this.propertyService.props;
+    return props.getProperty(`${containerFileId}:Model_Lock:${model.Username}`) ? true : false;
+  }
+
   static readyToDownload(model) {
-    return ModelRepository.readyToScrape(model) && model['Photo Folder ID'] !== '';
+    return ModelRepository.readyToScrape(model);
   }
 
   static readyToScrape(model) {
-    return ModelRepository.isActiveAndUnlocked(model) && model['Metadata ID'] !== '';
+    return ModelRepository.isActive(model) && ModelRepository.isModelSetupDone(model);
   }
 
-  static isActiveAndUnlocked(model) {
-    return model['Inactive'] === '' && model['Locked'] === '';
+  static isActive(model) {
+    return model['Inactive'] === '';
   }
 
   static isModelSetupDone(model) {

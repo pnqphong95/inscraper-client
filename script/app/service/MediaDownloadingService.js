@@ -13,92 +13,111 @@ class MediaDownloadingService {
   }
 
   download(modelCount) {
-    const timeout = Configurer.constructTimeout();
+    const timeout = Configurer.constructTimeout(300000);
     const models = this.modelRepo.getReadyToDownloadModels(modelCount);
-    console.log(`Download medias for models: ${models.map(i => i.Username)}`);
-    SwissKnife.runInLoop(models, (model, index, collector) => {
-      const successModel = this.downloadModelMedia(model, timeout);
-      if (successModel) {
-        this.modelRepo.updateModel(successModel, { lastDownloaded: true });
-        collector.success.push(successModel);
-      }
-    }, { timeout });
+    try {
+      this.modelRepo.lockModels(models);
+      SwissKnife.executeLoopWithTimeout(timeout, models, (model, i, collector) => {
+        const successModel = this.downloadModelMedia(model, timeout);
+        if (successModel) {
+          this.modelRepo.updateModel(successModel, { lastDownloaded: true });
+          collector.success(successModel);
+        }
+      });
+    } finally {
+      this.modelRepo.unlockModels(models);
+    }
   }
 
   downloadModelMedia(model, timeout) {
-    const metadataRepo = ModelMetadataRepository.instance(model);
-    const medias = metadataRepo.getMediaReadyToDownload();
+    const downloadRepo = MediaDownloadRepository.instance(model);
+    const mediaRepo = ModelMediaRepository.instance(model);
+    const medias = downloadRepo.getMediaReadyToDownload();
     if (medias.length === 0) {
-      console.log(`[${model.Username}] No media to process.`);
+      console.log(`[${model.Username}] All medias are processed.`);
       return model;
     } else {
       const photoFolder = DriveApp.getFolderById(model['Photo Folder ID']);
-      const partitioned = MediaDownloadingService.partitionMedia(photoFolder, medias);
-      const updateIdResult = this.saveDriveIdToExistingMedia(metadataRepo, partitioned.ignores, timeout);
-      const downloadResult = this.downloadModelMediaByChunk(metadataRepo, photoFolder, partitioned.downloads, { timeout });
-      const totalSuccess = downloadResult.success.length + updateIdResult.success.length;
-      console.log(`[${model.Username}] ${totalSuccess}/${medias.length} medias are processed. ` 
-        + `Download new ${downloadResult.success.length}/${partitioned.downloads.length} medias, ` 
-        + `Update ${updateIdResult.success.length}/${partitioned.ignores.length} existing medias.`);
-      if (totalSuccess === medias.length) {
+      const partitioned = this._partitionMedia(photoFolder, medias, timeout);
+      const storeResult = this.downloadToDrive(photoFolder, partitioned.downloads, timeout);
+      const mediasToMove = partitioned.existings.concat(storeResult.successItems);
+      const moveResult = this.moveMediaToMediaList(mediaRepo, downloadRepo, mediasToMove, timeout);
+      console.log(`[${model.Username}] ${mediasToMove.length}/${medias.length} medias save to drive. `
+        + `Move ${moveResult.successCount()}/${medias.length} medias to Media sheet, `);
+      if (moveResult.successCount() === medias.length) {
         return model;
       }
     }
   }
 
-  downloadModelMediaByChunk(metadataRepo, photoFolder, medias, { timeout }) {
-    return SwissKnife.runCallbackInChunk(medias, (collector, workingMedias) => {
+  downloadToDrive(photoFolder, downloads, timeout) {
+    const modelFolName = photoFolder.getName();
+    const options = { pageSize: 5, timeout };
+    return SwissKnife.pageableLoopWithOptions(options, downloads, (items, collector) => {
       try {
-        var responses = UrlFetchApp.fetchAll(workingMedias.map(media => media['Download URL']));
-        SwissKnife.runInLoop(responses, (resp, i) => {
+        const urls = items.map(media => media['Download URL']);
+        const responses = UrlFetchApp.fetchAll(urls);
+        SwissKnife.executeLoopWithTimeout(timeout, responses, (resp, i) => {
           if (resp.getResponseCode() === 200) {
             const mediaFile = photoFolder.createFile(resp.getBlob());
-            workingMedias[i]['Drive ID'] = mediaFile.getId();
-            metadataRepo.refreshUrl(workingMedias[i]); workingMedias[i].save();
-            collector.success.push(workingMedias[i]);
+            items[i]['Drive ID'] = mediaFile.getId();
+            collector.success(items[i]);
           } else {
-            collector.error.push(workingMedias[i]);
+            collector.error(items[i]);
           }
-        }, { timeout });
-        console.log(`[${photoFolder.getName()}] Downloaded ${collector.success.length}/${medias.length} ...`);
+        });
       } catch (e) {
-        const ids = workingMedias.map(i => i['Media ID']);
-        console.log(`[${photoFolder.getName()}] Unable to download bundle of medias ${ids}`);
-        collector.error = collector.error.concat(workingMedias);
+        const ids = items.map(i => i['Media ID']);
+        console.log(`[${modelFolName}] Unable to download bundle of medias ${ids}`);
+        collector.allError(items);
       }
-    }, { cSize: 5, timeout });
+      console.log(`[${modelFolName}] Downloaded ${collector.successCount()}/${downloads.length} ...`);
+    });
   }
 
-  saveDriveIdToExistingMedia(metadataRepo, existingMedias, timeout) {
-    return SwissKnife.runCallbackInChunk(existingMedias, (collector, workingMedias) => {
-      const result = SwissKnife.runInLoop(workingMedias, (media, i, collector) => {
-        metadataRepo.refreshUrl(media); media.save();
-        collector.success.push(media);
-      }, {});
-      collector.success = collector.success.concat(result.success);
-    }, { timeout });
+  moveMediaToMediaList(mediaRepo, downloadRepo, mediasToMove, timeout) {
+    const options = { timeout, pageSize: 5 };
+    return SwissKnife.pageableLoopWithOptions(options, mediasToMove, (items, collector) => {
+      
+      const deleteFunc = (media, i, delCollector) => {
+        downloadRepo.deleteMedia(media);
+        delCollector.success(media);
+      };
+      const deleteResult = SwissKnife.executeLoopWithTimeout(timeout, items, deleteFunc);
+      const createResult = mediaRepo.batchCreate(deleteResult.successItems);
+      collector.allSuccess(createResult);
+
+    });
   }
 
-  static partitionMedia(modelPhotoFolder, medias) {
-    var downloads = [], ignores = [];
-    for(var i = 0; i < medias.length; i++) {
-      const url = medias[i]['Download URL'];
+  _partitionMedia(photoFolder, medias, timeout) {
+    var downloads = [], existings = [];
+    SwissKnife.executeLoopWithTimeout(timeout, medias, (media) => {
       try {
-        var urlParts = url.split('?')[0].split('/');
-        var nameWithExtension = urlParts[urlParts.length - 1];
-        const matches = modelPhotoFolder.getFilesByName(nameWithExtension);
-        if (!matches.hasNext()) {
-          downloads.push(medias[i]);
+        const nameWithExtension = this._fileNameFromUrl(media['Download URL']);
+        const matches = photoFolder.getFilesByName(nameWithExtension);
+        if (matches.hasNext()) {
+          media['Drive ID'] = matches.next().getId();
+          existings.push(media);
         } else {
-          medias[i]['Drive ID'] = matches.next().getId();
-          ignores.push(medias[i]);
+          downloads.push(media);
         }
       } catch (error) {
-        console.log(`[${modelPhotoFolder.getName()}] Ignore media ${medias[i]['Media ID']} due to download link partition error.`, error);
-        ignores.push(medias[i]);
+        console.log(`[${photoFolder.getName()}] Skip media ${media['Media ID']} because URL parse error.`, error);
+      }
+    });
+    console.log(`[${photoFolder.getName()}] Downloaded ${existings.length}/${medias.length} (existing) ...`);
+    return { downloads, existings };
+  }
+
+  _fileNameFromUrl(url) {
+    var urlParts = url.split('?');
+    if (urlParts.length > 0) {
+      urlParts = urlParts[0].split('/');
+      if (urlParts.length > 0) {
+        return urlParts[urlParts.length - 1];
       }
     }
-    return { downloads, ignores };
   }
 
 }

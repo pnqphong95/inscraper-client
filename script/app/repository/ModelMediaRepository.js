@@ -1,8 +1,8 @@
-class ModelMetadataRepository {
+class ModelMediaRepository {
 
   static instance(model) {
-    return Configurer.initInstance(`ModelMetadataRepository_${model.Username}`, 
-      () => new ModelMetadataRepository(model));
+    return Configurer.initInstance(`ModelMediaRepository_${model.Username}`, 
+      () => new ModelMediaRepository(model));
   }
   
   constructor(model) {
@@ -11,14 +11,12 @@ class ModelMetadataRepository {
     this.Media = Tamotsu.Table.define({ idColumn: 'Media ID', sheetName: 'Media', rowShift: 1 });
   }
 
-  createOrUpdate(mediaObj) {
-    this.refreshUrl(mediaObj);
-    this.Media.createOrUpdate(mediaObj);
-  }
-
   batchCreate(mediaObjs) {
+    if (!mediaObjs || mediaObjs.length === 0) {
+      return [];
+    }
     mediaObjs.forEach(i => this.refreshUrl(i));
-    this.Media.batchCreate(mediaObjs);
+    return this.Media.batchCreate(mediaObjs);
   }
 
   refreshUrl(mediaObj) {
@@ -26,10 +24,6 @@ class ModelMetadataRepository {
     if (mediaObj['Drive ID']) {
       mediaObj['Drive URL'] = `=HYPERLINK("https://drive.google.com/file/d/" & "${mediaObj['Drive ID']}"; "View")`;
     }
-  }
-
-  getMediaReadyToDownload() {
-    return this.Media.where({ 'Drive ID': '' }).where(media => media['Download URL'] !== '').all();
   }
 
 }

@@ -11,8 +11,9 @@
       },
       {
         "userSymbol": "Tamotsu",
-        "version": "1",
-        "libraryId": "1MFS_u3l2Yk7qr6X66memMMHgKJx_19_EJCrisj9xBPC1vCfyhcZ4i-Jg"
+        "libraryId": "1MFS_u3l2Yk7qr6X66memMMHgKJx_19_EJCrisj9xBPC1vCfyhcZ4i-Jg",
+        "version": "0",
+        "developmentMode": true
       }
     ]
   }

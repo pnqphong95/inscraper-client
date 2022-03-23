@@ -33,6 +33,7 @@ const Configurer = {
     }
     return settings.containerFile;
   },
+  
   setProp: function(key, val) {
     const properties = PropertiesService.getUserProperties();
     if (!val) {
@@ -42,17 +43,20 @@ const Configurer = {
       properties.setProperty(key, val);
     }
   },
+
   getProp: function(key) {
     const properties = PropertiesService.getUserProperties();
     const propVal = properties.getProperty(key);
     return propVal;
   },
+
   initInstance: function(beanClass, instanceInitializerCallback) {
     if (!instancePool[beanClass]) {
       instancePool[beanClass] = instanceInitializerCallback();
     }
     return instancePool[beanClass];
   },
+
   sessionAuth: function(retrieveSessionAuthCallback) {
     if (!settings.sessionAuth) {
       if (services.authService) {
@@ -64,9 +68,27 @@ const Configurer = {
     }
     return settings.sessionAuth;
   },
-  constructTimeout: function() {
+
+  constructTimeout: function(timout) {
     const configuredTimeout = settings.externalConfigs.executionTimeout;
     const defaultTimeout = defaultSettings.externalConfigs.executionTimeout;
-    return new Date(new Date().getTime() + Number(configuredTimeout || defaultTimeout));
+    const value = new Date(new Date().getTime() + Number(timout || configuredTimeout || defaultTimeout));
+    console.log(`[Timeout at] ` + value.toISOString());
+    return value;
+  },
+
+  documentProps: function() {
+    const containerFileId = this.getProp('containerFileId');
+    if (containerFileId) { 
+      return {
+        scope: 'Script', containerFileId, 
+        props: PropertiesService.getScriptProperties() 
+      };
+    }
+    return { 
+      scope: 'Document', containerFileId: this.openContainerFile().getId(), 
+      props: PropertiesService.getDocumentProperties() 
+    };
   }
+
 }
