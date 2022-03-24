@@ -19,7 +19,7 @@ class MediaNoSourceRepository {
   batchCreate(medias) {
     const mediaHasSource = MediaNoSourceRepository.firstMediaHasSource(medias);
     if (mediaHasSource) {
-      console.log(`${this.Model.Username}: Store medias to no source table ...FAILED. ` 
+      Logger.log(`${this.Model.Username}: Store medias to no source table ...FAILED. ` 
         + `Media ${mediaHasSource['Media ID']} has source URL.`);
       return [];
     }

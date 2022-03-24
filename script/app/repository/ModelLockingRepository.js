@@ -16,7 +16,7 @@ class ModelLockingRepository {
       lockModelProps[`${containerFileId}:Model_Lock:${model.Username}`] = true;
       modelUsernames.push(model.Username);
     });
-    console.log(`[${this.propertyService.scope}] Lock ${modelUsernames.length} ` 
+    Logger.log(`[${this.propertyService.scope}] Lock ${modelUsernames.length} ` 
       + `models for processing: ${modelUsernames}`);
     props.setProperties(lockModelProps);
   }
@@ -29,7 +29,7 @@ class ModelLockingRepository {
       props.deleteProperty(`${containerFileId}:Model_Lock:${model.Username}`);
       modelUsernames.push(model.Username);
     });
-    console.log(`[${this.propertyService.scope}] ` 
+    Logger.log(`[${this.propertyService.scope}] ` 
       + `Unlocked ${modelUsernames.length} models: ${modelUsernames}`);
   }
 

@@ -29,7 +29,7 @@ const Configurer = {
         throw new ConfigurationException('This script must be bounded by a Master Sheet. ' 
           + 'Or you have to provide your own Master Sheet ID as parameter when initialize.');
       }
-      console.log(`Opening master sheet [${settings.containerFile.getName()}] ...DONE`);
+      Logger.log(`Opening master sheet [${settings.containerFile.getName()}] ...DONE`);
     }
     return settings.containerFile;
   },
@@ -39,7 +39,7 @@ const Configurer = {
     if (!val) {
       properties.deleteProperty(key);
     } else {
-      console.log(`Set ${key}=${val}`);
+      Logger.log(`Set ${key}=${val}`);
       properties.setProperty(key, val);
     }
   },
@@ -64,7 +64,7 @@ const Configurer = {
       } else {
         settings.sessionAuth = retrieveSessionAuthCallback();
       }
-      console.log(`Configure authentication [${settings.sessionAuth.Username}] ...DONE`);
+      Logger.log(`Configure authentication [${settings.sessionAuth.Username}] ...DONE`);
     }
     return settings.sessionAuth;
   },
@@ -73,7 +73,7 @@ const Configurer = {
     const configuredTimeout = settings.externalConfigs.executionTimeout;
     const defaultTimeout = defaultSettings.externalConfigs.executionTimeout;
     const value = new Date(new Date().getTime() + Number(timout || configuredTimeout || defaultTimeout));
-    console.log(`[Timeout at] ` + value.toISOString());
+    Logger.log(`[Timeout at] ` + value.toISOString());
     return value;
   },
 

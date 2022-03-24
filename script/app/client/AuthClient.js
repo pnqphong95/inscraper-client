@@ -13,12 +13,12 @@ class AuthClient {
         payload: JSON.stringify({ username, password }) 
       });
       if (response.getResponseCode() === 200) {
-        console.log(`Authenticate ${username} on server! ...DONE`);
+        Logger.log(`Authenticate ${username} on server! ...DONE`);
         const authStr = response.getContentText();
         return JSON.parse(authStr);
       }
     } catch (error) {
-      console.log(`Unable to authenticate ${username} on server!`, error);
+      Logger.log(`Unable to authenticate ${username} on server!\n${error}`);
     }
   }
 

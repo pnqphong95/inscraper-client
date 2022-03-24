@@ -37,16 +37,16 @@ class ModelScrapingService {
       SwissKnife.executeLoop(responses, (resp, i) => {
         if (resp.getResponseCode() === 200) {
           models[i].scrapeResponse = JSON.parse(resp.getContentText());
-          console.log(`[${models[i].Username}] Scrape model metadata ...DONE. ` 
+          Logger.log(`[${models[i].Username}] Scrape model metadata ...DONE. ` 
             + `Found ${models[i].scrapeResponse.data.length} new medias.`);
           collector.success(models[i]);
         } else {
-          console.log(`[${models[i].Username}] Scrape model metadata ...FAILED`);
+          Logger.log(`[${models[i].Username}] Scrape model metadata ...FAILED`);
           collector.error(models[i]);
         }
       }, {});
     } catch (e) {
-      console.log(`${JSON.stringify(models.map(i => i.Username))} Scrape model metadata ...FAILED`, e);
+      Logger.log(`${JSON.stringify(models.map(i => i.Username))} Scrape model metadata ...FAILED\n${e}`);
       collector.allError(models);
     }
     return collector;
@@ -104,7 +104,7 @@ class ModelScrapingService {
         }
       } catch (e) {
         undones = medias.filter(item => !dones.includes(item));
-        console.log(`[${model.Username}] Store ${dones.length}/${medias.length}. Remaining: ${undones.length}`, e);
+        Logger.log(`[${model.Username}] Store ${dones.length}/${medias.length}. Remaining: ${undones.length}\n${e}`);
       }
     }
     

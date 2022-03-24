@@ -34,7 +34,7 @@ class MediaDownloadingService {
     const mediaRepo = ModelMediaRepository.instance(model);
     const medias = downloadRepo.getMediaReadyToDownload();
     if (medias.length === 0) {
-      console.log(`[${model.Username}] All medias are processed.`);
+      Logger.log(`[${model.Username}] All medias are processed.`);
       return model;
     } else {
       const photoFolder = DriveApp.getFolderById(model['Photo Folder ID']);
@@ -42,7 +42,7 @@ class MediaDownloadingService {
       const storeResult = this.downloadToDrive(photoFolder, partitioned.downloads, timeout);
       const mediasToMove = partitioned.existings.concat(storeResult.successItems);
       const moveResult = this.moveMediaToMediaList(mediaRepo, downloadRepo, mediasToMove, timeout);
-      console.log(`[${model.Username}] ${mediasToMove.length}/${medias.length} medias save to drive. `
+      Logger.log(`[${model.Username}] ${mediasToMove.length}/${medias.length} medias save to drive. `
         + `Move ${moveResult.successCount()}/${medias.length} medias to Media sheet, `);
       if (moveResult.successCount() === medias.length) {
         return model;
@@ -68,10 +68,10 @@ class MediaDownloadingService {
         });
       } catch (e) {
         const ids = items.map(i => i['Media ID']);
-        console.log(`[${modelFolName}] Unable to download bundle of medias ${ids}`);
+        Logger.log(`[${modelFolName}] Unable to download bundle of medias ${ids}\n${e}`);
         collector.allError(items);
       }
-      console.log(`[${modelFolName}] Downloaded ${collector.successCount()}/${downloads.length} ...`);
+      Logger.log(`[${modelFolName}] Downloaded ${collector.successCount()}/${downloads.length} ...`);
     });
   }
 
@@ -103,10 +103,10 @@ class MediaDownloadingService {
           downloads.push(media);
         }
       } catch (error) {
-        console.log(`[${photoFolder.getName()}] Skip media ${media['Media ID']} because URL parse error.`, error);
+        Logger.log(`[${photoFolder.getName()}] Skip media ${media['Media ID']} because URL parse error.\n${error}`);
       }
     });
-    console.log(`[${photoFolder.getName()}] Downloaded ${existings.length}/${medias.length} (existing) ...`);
+    Logger.log(`[${photoFolder.getName()}] Downloaded ${existings.length}/${medias.length} (existing) ...`);
     return { downloads, existings };
   }
 

@@ -20,7 +20,7 @@ class MediaDownloadRepository {
   batchCreate(medias) {
     const mediaNoSource = MediaDownloadRepository.firstMediaNoSource(medias);
     if (mediaNoSource) {
-      console.log(`${this.Model.Username}: Store medias to download list ...FAILED. ` 
+      Logger.log(`${this.Model.Username}: Store medias to download list ...FAILED. ` 
         + `Media ${mediaNoSource['Media ID']} has no source URL.`);
       return [];
     }

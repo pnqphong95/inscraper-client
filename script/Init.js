@@ -20,7 +20,7 @@ function initialize(options) {
     Configurer.sessionAuth();
         
   } catch (e) {
-    console.error(`Failed to initialize Inscraper client!`); throw e;
+    Logger.log(`Failed to initialize Inscraper client!`); throw e;
   }
 }
 

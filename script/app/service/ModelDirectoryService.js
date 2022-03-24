@@ -67,7 +67,7 @@ class ModelDirectoryService {
       model['Last Updated'] = new Date().toISOString();
     }
     this.modelRepo.updateModel(model);
-    console.log(`[${model.Username}] Check Metadata and Photo folder are up-to-date ...DONE`);
+    Logger.log(`[${model.Username}] Check Metadata and Photo folder are up-to-date ...DONE`);
   }
 
   setupModelMetadataTemplate(model, metadataFolder) {
@@ -100,9 +100,9 @@ class ModelDirectoryService {
       const match = matches.next();
       const matchNewName = match.getName() + '_deprecated';
       match.setName(matchNewName);
-      console.log(`[${newFileName}] Found existing file ${match.getName()}, rename to ${matchNewName} ...DONE`);
+      Logger.log(`[${newFileName}] Found existing file ${match.getName()}, rename to ${matchNewName} ...DONE`);
     }
-    console.log(`[${newFileName}] Clone new ${fileToCopy.getName()} to ${destFolder.getName()} ...DONE`);
+    Logger.log(`[${newFileName}] Clone new ${fileToCopy.getName()} to ${destFolder.getName()} ...DONE`);
     return fileToCopy.makeCopy(newFileName, destFolder);
   }
 
@@ -111,7 +111,7 @@ class ModelDirectoryService {
     if (matches.hasNext()) {
       return matches.next();
     }
-    console.log(`[${folderName}] Create new photo folder under ${parentFolder.getName()} ...DONE`);
+    Logger.log(`[${folderName}] Create new photo folder under ${parentFolder.getName()} ...DONE`);
     return parentFolder.createFolder(folderName);
   }
 

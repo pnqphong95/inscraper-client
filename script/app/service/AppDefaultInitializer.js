@@ -53,7 +53,7 @@ class AppDefaultInitializer {
         }
       }
     }
-    console.log(`Verify app directory [${root.getName()}] ...PASSED`);
+    Logger.log(`Verify app directory [${root.getName()}] ...PASSED`);
     return result;
   }
 
