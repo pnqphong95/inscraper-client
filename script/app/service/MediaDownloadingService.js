@@ -16,7 +16,7 @@ class MediaDownloadingService {
   }
 
   download(modelCount) {
-    const timeout = Configurer.constructTimeout(300000);
+    const timeout = Configurer.constructTimeout();
     const models = this.modelRepo.getReadyToDownloadModels(modelCount);
     this.modelLockingRepo.onModelLocked(models, (items) => {
       SwissKnife.executeLoopWithTimeout(timeout, items, (model, i, collector) => {

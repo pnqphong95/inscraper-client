@@ -15,7 +15,10 @@ class ModelMediaRepository {
     if (!mediaObjs || mediaObjs.length === 0) {
       return [];
     }
-    mediaObjs.forEach(i => this.refreshUrl(i));
+    mediaObjs.forEach(i => {
+      this.refreshUrl(i);
+      this.lastUpdated(i);
+    });
     return this.Media.batchCreate(mediaObjs);
   }
 
@@ -24,6 +27,10 @@ class ModelMediaRepository {
     if (mediaObj['Drive ID']) {
       mediaObj['Drive URL'] = `=HYPERLINK("https://drive.google.com/file/d/" & "${mediaObj['Drive ID']}"; "View")`;
     }
+  }
+
+  lastUpdated(mediaObj) {
+    mediaObj['Updated At'] = new Date().toISOString();
   }
 
 }

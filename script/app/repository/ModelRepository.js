@@ -66,6 +66,13 @@ class ModelRepository {
     return amount ? models.slice(0, amount) : models;
   }
 
+  getModelByUsername(username) {
+    return this.Model
+      .where(model => !this.modelLockingRepo.isModelLock(model))
+      .where(model => model['Username'] === username)
+      .order(ModelRepository.lastUpdatedComparator).first();
+  }
+
   static readyToDownload(model) {
     return ModelRepository.readyToScrape(model);
   }

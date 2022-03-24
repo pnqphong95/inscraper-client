@@ -23,8 +23,15 @@ class MediaNoSourceRepository {
         + `Media ${mediaHasSource['Media ID']} has source URL.`);
       return [];
     }
-    medias.forEach(i => MediaNoSourceRepository.refreshUrl(i));
+    medias.forEach(i => {
+      MediaNoSourceRepository.refreshUrl(i);
+      MediaNoSourceRepository.lastUpdated(i);
+    });
     return this.MediaNoSource.batchCreate(medias);
+  }
+
+  static lastUpdated(mediaObj) {
+    mediaObj['Updated At'] = new Date().toISOString();
   }
 
   static refreshUrl(mediaObj) {

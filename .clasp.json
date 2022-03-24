@@ -3,6 +3,7 @@
   "rootDir": "./script",
   "filePushOrder": [
     "script/Config.js",
-    "script/Init.js"
+    "script/Init.js",
+    "script/InitUi.js"
   ]
 }

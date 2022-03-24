@@ -12,7 +12,7 @@ var settings = {
 };
 var defaultSettings = {
   externalConfigs: {
-    timeout: 300000
+    executionTimeout: 300000
   }
 }
 

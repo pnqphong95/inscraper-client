@@ -24,7 +24,10 @@ class MediaDownloadRepository {
         + `Media ${mediaNoSource['Media ID']} has no source URL.`);
       return [];
     }
-    medias.forEach(i => MediaDownloadRepository.refreshUrl(i));
+    medias.forEach(i => {
+      MediaDownloadRepository.refreshUrl(i);
+      MediaDownloadRepository.lastUpdated(i);
+    });
     return this.MediaDownload.batchCreate(medias);
   }
 
@@ -35,6 +38,10 @@ class MediaDownloadRepository {
 
   static refreshUrl(mediaObj) {
     mediaObj['Post'] = `=HYPERLINK("https://www.instagram.com/p/" & "${mediaObj['Short Code']}"; "View")`;
+  }
+
+  static lastUpdated(mediaObj) {
+    mediaObj['Updated At'] = new Date().toISOString();
   }
 
   static firstMediaNoSource(medias) {

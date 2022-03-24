@@ -10,12 +10,11 @@ const SwissKnife = {
   },
 
   pageableLoop: function(list, processFunc, { pageSize, afterFunc, timeout, timeoutFunc }) {
-    const collector = this.collector();
-    const size = pageSize || 5, endTime = timeout || new Date(new Date().getTime() + 300000);
+    const collector = this.collector(), size = pageSize || 5;
     if (!list || !processFunc) return collector;
     var dones = [], start = 0, end = Math.min(list.length, size);
     while (dones.length < list.length) {
-      if (endTime <= new Date()) {
+      if (timeout && timeout <= new Date()) {
         if (timeoutFunc) timeoutFunc(collector);
         const undones = list.filter(item => !dones.includes(item));
         collector.allRemain(undones);
@@ -32,14 +31,14 @@ const SwissKnife = {
   },
 
   executeLoopWithTimeout(timeout, list, processFunc) {
-    return this.executeLoop(list, processFunc, { timeout }); 
+    return this.executeLoop(list, processFunc, timeout); 
   },
   
-  executeLoop: function(list, processFunc, { timeout }) {
-    const collector = this.collector();
-    const dones = [], endTime = timeout || new Date(new Date().getTime() + 300000);
+  executeLoop: function(list, processFunc, timeout) {
+    const collector = this.collector(), dones = [];
+    if (!list || !processFunc) return collector;
     for(var i = 0; i < list.length; i++) {
-      if (endTime <= new Date()) {
+      if (timeout && timeout <= new Date()) {
         const undones = list.filter(item => !dones.includes(item));
         collector.allRemain(undones);
         break;
