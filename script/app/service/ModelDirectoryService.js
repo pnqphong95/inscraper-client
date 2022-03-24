@@ -7,7 +7,7 @@ class ModelDirectoryService {
 
   static delayInitializer() {
     return new ModelDirectoryService(
-      Configurer.initInstance('ModelRepository', () => new ModelRepository())
+      ModelRepository.instance(), ModelLockingRepository.instance()
     );
   }
 
@@ -15,30 +15,27 @@ class ModelDirectoryService {
     return Configurer.initInstance('ModelDirectoryService', ModelDirectoryService.delayInitializer);
   }
 
-  constructor(modelRepo) {
+  constructor(modelRepo, modelLockingRepo) {
     this.modelRepo = modelRepo;
+    this.modelLockingRepo = modelLockingRepo;
     this.metadataTemplate = DriveApp.getFileById(TEMPLATE_IDS.metadataTemplateId);
   }
 
-  setupModelsDirectory({ rescanAll, modelCount }) {
+  setupModelsDirectory(rescanAll, modelCount) {
     const metadataFolder = settings.appFolders.Metadata;
     const instagramPhotoFolder = settings.appFolders.InstagramPhoto;
     if (!metadataFolder || !instagramPhotoFolder) {
       throw new ConfigurationException(ModelDirectoryService.errorMessages.appFoldersMissing);
     }
-    var models;
-    try {
+    const models = this.getModelsToSetup(rescanAll, modelCount);
+    this.modelLockingRepo.onModelLocked(models, (items) => {
       if (rescanAll) {
-        models = this.modelRepo.getActiveModels(modelCount); this.modelRepo.lockModels(models);
         SwissKnife.executeLoop(models, model => this.scanModelDirectory(model), {});
       } else {
-        models = this.modelRepo.getModelsNotSetup(modelCount); this.modelRepo.lockModels(models);
         SwissKnife.executeLoop(models, model => this.setupModelDirectory(model), {});
       }
-      return models;
-    } finally {
-      this.modelRepo.unlockModels(models);
-    }
+      return items;
+    })
   }
 
   setupModelDirectory(model) {
@@ -86,6 +83,14 @@ class ModelDirectoryService {
       const modelPhotoFolder = ModelDirectoryService.createFolderIfNotExist(photoFolder, model.Username);
       model['Photo Folder ID'] = modelPhotoFolder.getId();
       model['Last Updated'] = new Date().toISOString();
+    }
+  }
+
+  getModelsToSetup(rescanAll, modelCount) {
+    if (rescanAll) {
+      return this.modelRepo.getActiveModels(modelCount);
+    } else {
+      return this.modelRepo.getModelsNotSetup(modelCount);
     }
   }
 

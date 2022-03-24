@@ -1,31 +1,32 @@
 class ModelScrapingService {
 
   static delayInitializer() {
-    return new ModelScrapingService(ModelRepository.instance());
+    return new ModelScrapingService(
+      ModelRepository.instance(), ModelLockingRepository.instance()
+    );
   }
 
   static instance() {
     return Configurer.initInstance('ModelScrapingService', ModelScrapingService.delayInitializer);
   }
 
-  constructor(modelRepo) {
+  constructor(modelRepo, modelLockingRepo) {
     this.modelRepo = modelRepo;
+    this.modelLockingRepo = modelLockingRepo;
   }
 
   scrapeAndStoreModelMetadatas(modelCount) {
+    const timeout = Configurer.constructTimeout();
     const models = this.modelRepo.getReadyToScrapeModels(modelCount);
-    try {
-      const timeout = Configurer.constructTimeout();
-      this.modelRepo.lockModels(models);
-      SwissKnife.pageableLoop(models, (workingModels, collector) => {
-        const scrapeResult = this.scrapeModels(workingModels);
+    this.modelLockingRepo.onModelLocked(models, (items) => {
+      const options = { pageSize: 3, timeout };
+      SwissKnife.pageableLoopWithOptions(options, items, (processingItems, collector) => {
+        const scrapeResult = this.scrapeModels(processingItems);
         collector.allError(scrapeResult.error);
         const storeResult = this.storeModels(scrapeResult.successItems);
         collector.allError(storeResult.error);
-      }, { timeout });
-    } finally {
-      this.modelRepo.unlockModels(models);
-    }
+      });
+    });
   }
 
   scrapeModels(models) {

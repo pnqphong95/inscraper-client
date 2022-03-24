@@ -1,32 +1,32 @@
 class MediaDownloadingService {
 
   static delayInitializer() {
-    return new MediaDownloadingService(ModelRepository.instance());
+    return new MediaDownloadingService(
+      ModelRepository.instance(), ModelLockingRepository.instance()
+    );
   }
 
   static instance() {
     return Configurer.initInstance('MediaDownloadingService', MediaDownloadingService.delayInitializer);
   }
 
-  constructor(modelRepo) {
+  constructor(modelRepo, modelLockingRepo) {
     this.modelRepo = modelRepo;
+    this.modelLockingRepo = modelLockingRepo;
   }
 
   download(modelCount) {
     const timeout = Configurer.constructTimeout(300000);
     const models = this.modelRepo.getReadyToDownloadModels(modelCount);
-    try {
-      this.modelRepo.lockModels(models);
-      SwissKnife.executeLoopWithTimeout(timeout, models, (model, i, collector) => {
+    this.modelLockingRepo.onModelLocked(models, (items) => {
+      SwissKnife.executeLoopWithTimeout(timeout, items, (model, i, collector) => {
         const successModel = this.downloadModelMedia(model, timeout);
         if (successModel) {
           this.modelRepo.updateModel(successModel, { lastDownloaded: true });
           collector.success(successModel);
         }
       });
-    } finally {
-      this.modelRepo.unlockModels(models);
-    }
+    });
   }
 
   downloadModelMedia(model, timeout) {

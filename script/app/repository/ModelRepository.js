@@ -1,11 +1,15 @@
 class ModelRepository {
 
+  static delayInitializer() {
+    return new ModelRepository(ModelLockingRepository.instance());
+  }
+
   static instance() {
-    return Configurer.initInstance('ModelRepository', () => new ModelRepository());
+    return Configurer.initInstance('ModelRepository', ModelRepository.delayInitializer);
   }
   
-  constructor() {
-    this.propertyService = Configurer.documentProps();
+  constructor(modelLockingRepo) {
+    this.modelLockingRepo = modelLockingRepo;
     this.Sheet = Configurer.openContainerFile(); 
     Tamotsu.initialize(this.Sheet);
     this.Model = Tamotsu.Table.define({ idColumn: 'Username', sheetName: 'Model', rowShift: 1 });
@@ -31,7 +35,7 @@ class ModelRepository {
 
   getActiveModels(amount) {
     const models = this.Model
-      .where(model => !this.isModelLock(model))
+      .where(model => !this.modelLockingRepo.isModelLock(model))
       .where(model => ModelRepository.isActive(model))
       .order(ModelRepository.lastUpdatedComparator).all();
     return amount ? models.slice(0, amount) : models;
@@ -39,7 +43,7 @@ class ModelRepository {
 
   getModelsNotSetup(amount) {
     const models = this.Model
-      .where(model => !this.isModelLock(model))
+      .where(model => !this.modelLockingRepo.isModelLock(model))
       .where(model => ModelRepository.isActive(model))
       .where(model => !ModelRepository.isModelSetupDone(model))
       .order(ModelRepository.lastUpdatedComparator).all();
@@ -48,49 +52,18 @@ class ModelRepository {
 
   getReadyToDownloadModels(amount) {
     const models = this.Model
-      .where(model => !this.isModelLock(model))
+      .where(model => !this.modelLockingRepo.isModelLock(model))
       .where(model => ModelRepository.readyToDownload(model))
       .order(ModelRepository.lastDownloadedComparator).all();
-    return amount ? models.slice(0, amount) : models.slice(0, 10);
+    return amount ? models.slice(0, amount) : models;
   }
 
   getReadyToScrapeModels(amount) {
     const models = this.Model
-      .where(model => !this.isModelLock(model))
+      .where(model => !this.modelLockingRepo.isModelLock(model))
       .where(model => ModelRepository.readyToScrape(model))
       .order(ModelRepository.lastUpdatedComparator).all();
-    return amount ? models.slice(0, amount) : models.slice(0, 5);
-  }
-
-  lockModels(models) {
-    const containerFileId = this.propertyService.containerFileId;
-    const props = this.propertyService.props;
-    const lockModelProps = {}, modelUsernames = [];
-    models.forEach(model => {
-      lockModelProps[`${containerFileId}:Model_Lock:${model.Username}`] = true;
-      modelUsernames.push(model.Username);
-    });
-    console.log(`[${this.propertyService.scope}] Lock ${modelUsernames.length} ` 
-      + `models for processing: ${modelUsernames}`);
-    props.setProperties(lockModelProps);
-  }
-
-  unlockModels(models) {
-    const containerFileId = this.propertyService.containerFileId;
-    const props = this.propertyService.props;
-    const modelUsernames = [];
-    models.forEach(model => {
-      props.deleteProperty(`${containerFileId}:Model_Lock:${model.Username}`);
-      modelUsernames.push(model.Username);
-    });
-    console.log(`[${this.propertyService.scope}] ` 
-      + `Unlocked ${modelUsernames.length} models: ${modelUsernames}`);
-  }
-
-  isModelLock(model) {
-    const containerFileId = this.propertyService.containerFileId;
-    const props = this.propertyService.props;
-    return props.getProperty(`${containerFileId}:Model_Lock:${model.Username}`) ? true : false;
+    return amount ? models.slice(0, amount) : models;
   }
 
   static readyToDownload(model) {
