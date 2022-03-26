@@ -31,23 +31,23 @@ class ModelScrapingService {
   }
 
   scrapeModels(models, timeout) {
-    this.modelLockingRepo.onModelLocked(models, (items) => {
+    return this.modelLockingRepo.onModelLocked(models, (items) => {
       const options = { pageSize: 2, timeout };
-      SwissKnife.pageableLoopWithOptions(options, items, (processingItems, collector) => {
+      return SwissKnife.pageableLoopWithOptions(options, items, (processingItems, collector) => {
         const scrapeResult = this.scrapeModelMedias(processingItems);
-        collector.allError(scrapeResult.error);
+        collector.allError(scrapeResult.errorItems).allRemain(scrapeResult.remainItems);
         const saveResult = this.saveModels(scrapeResult.successItems);
-        collector.allError(saveResult.error);
+        collector.allError(saveResult.errorItems).allRemain(saveResult.remainItems)
+          .allSuccess(saveResult.successItems);
       });
     });
   }
 
   scrapeModelMedias(models) {
-    const collector = SwissKnife.collector();
     try {
       const requests = models.map(model => ModelScrapingService.scrapingRequest(model));
-      var responses = UrlFetchApp.fetchAll(requests);
-      SwissKnife.executeLoop(responses, (resp, i) => {
+      const responses = UrlFetchApp.fetchAll(requests);
+      return SwissKnife.executeLoop(responses, (resp, i, collector) => {
         if (resp.getResponseCode() === 200) {
           models[i].scrapeResponse = JSON.parse(resp.getContentText());
           Logger.log(`[${models[i].Username}] Scrape model metadata ...DONE. ` 
@@ -60,9 +60,8 @@ class ModelScrapingService {
       });
     } catch (e) {
       Logger.log(`${JSON.stringify(models.map(i => i.Username))} Scrape model metadata ...FAILED\n${e}`);
-      collector.allError(models);
+      return SwissKnife.collector().allError(models);
     }
-    return collector;
   }
 
   saveModels(models) {

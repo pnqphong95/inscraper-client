@@ -14,6 +14,7 @@ function initialize(options) {
     services.modelScrapingService = ModelScrapingService.instance();
     services.mediaScrapingService = MediaScrapingService.instance();
     services.mediaDownloadingService = MediaDownloadingService.instance();
+    services.mediaFileService = MediaFileService.instance();
 
     settings.externalConfigs = services.externalConfigService.validateExternalConfigs();
     settings.appFolders = services.appDefaultInitializer.validateAppWorkspace();
@@ -25,20 +26,48 @@ function initialize(options) {
   }
 }
 
-function downloadInBackground_() {
+function daemonScrapeModel() {
   initialize();
-  const result = Configurer.funcLock().onFuncLocked("downloadInBackground_", 
+  const result = Configurer.funcLock().onFuncLocked("daemonScrapeModel", 
+    () => services.modelScrapingService.scrapeNotUpdateRecentModels());
+  if (result && result.remainCount() > 0) {
+    const modelNames = result.remainItems.map(model => model.Username);
+    Logger.log(`${result.remainCount()} remaining models not scrape success! ${modelNames}`);
+    // Create new trigger in next 3 mins
+    Configurer.makeAnotherTrigger("daemonScrapeModel", 3);
+  }
+}
+
+function daemonScrapeMediaSource() {
+  initialize();
+  const result = Configurer.funcLock().onFuncLocked("daemonScrapeMediaSource", 
+    () => services.mediaScrapingService.scrapeNotUpdateRecentModels());
+  if (result && result.remainCount() > 0) {
+    const modelNames = result.remainItems.map(model => model.Username);
+    Logger.log(`${result.remainCount()} remaining models not scrape source success! ${modelNames}`);
+    // Create new trigger in next 3 mins
+    Configurer.makeAnotherTrigger("daemonScrapeMediaSource", 3);
+  }
+}
+
+function daemonDownloadMedia() {
+  initialize();
+  const result = Configurer.funcLock().onFuncLocked("daemonDownloadMedia", 
     () => services.mediaDownloadingService.download());
   if (result && result.remainCount() > 0) {
-    // Delete all other trigger "downloadInBackground_"
-    var triggers = ScriptApp.getProjectTriggers();
-    for (var i = 0; i < triggers.length; i++) {
-      if ("downloadInBackground_" === triggers[i].getHandlerFunction()) {
-        ScriptApp.deleteTrigger(triggers[i]);
-      }
-    }
-    // Create new trigger in next 2 mins
-    const trigger = ScriptApp.newTrigger("downloadInBackground_").timeBased().after(2 * 60 * 1000).create();
-    Logger.log(`Function downloadInBackground_ [${trigger.getUniqueId()}] start in next 2 mins`);
+    const modelNames = result.remainItems.map(model => model.Username);
+    Logger.log(`${result.remainCount()} remaining models not download success! ${modelNames}`);
+    // Create new trigger in next 3 mins
+    Configurer.makeAnotherTrigger("daemonDownloadMedia", 3);
+  }
+}
+
+function daemonScanPhotoFolders() {
+  initialize();
+  const result = Configurer.funcLock().onFuncLocked("daemonScanPhotoFolders", 
+    () => services.mediaFileService.scanPhotoFolders());
+  if (result && result.remainCount() > 0) {
+    // Create new trigger in next 3 mins
+    Configurer.makeAnotherTrigger("daemonScanPhotoFolders", 3);
   }
 }

@@ -16,8 +16,9 @@ const SwissKnife = {
     while (dones.length < list.length) {
       if (timeout && timeout <= new Date()) {
         if (timeoutFunc) timeoutFunc(collector);
-        const undones = list.filter(item => !dones.includes(item));
-        collector.allRemain(undones);
+        collector.allRemain(list.filter(item => 
+          !dones.includes(item) && !collector.remainItems.includes(item))
+        );
         break;
       }
       const subList = list.slice(start, end);
@@ -64,26 +65,32 @@ const SwissKnife = {
       
       success: function(item) {
         this.successItems.push(item);
+        return this;
       },
 
       allSuccess: function(listItem) {
         this.successItems = this.successItems.concat(listItem);
+        return this;
       },
       
       remain: function(item) {
         this.remainItems.push(item);
+        return this;
       },
 
       allRemain: function(listItem) {
         this.remainItems = this.remainItems.concat(listItem);
+        return this;
       },
       
       error: function(item) {
         this.errorItems.push(item);
+        return this;
       },
 
       allError: function(listItem) {
         this.errorItems = this.errorItems.concat(listItem);
+        return this;
       }
 
     }

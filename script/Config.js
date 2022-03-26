@@ -73,7 +73,7 @@ const Configurer = {
     const configuredTimeout = settings.externalConfigs.executionTimeout;
     const defaultTimeout = defaultSettings.externalConfigs.executionTimeout;
     const value = new Date(new Date().getTime() + Number(timout || configuredTimeout || defaultTimeout));
-    Logger.log(`[Timeout at] ` + value.toISOString());
+    Logger.log(`[Timer] Timeout at ` + value.toISOString());
     return value;
   },
 
@@ -102,7 +102,7 @@ const Configurer = {
           funcNameProps[`FunctionLocked:${funcName}`] = true;
         });
         this.scriptProps.setProperties(funcNameProps);
-        Logger.log(`Function running: ${funcNames}`);
+        Logger.log(`[Locker] ${funcNames} is locked.`);
       },
       
       unlock: function(funcNames) {
@@ -111,7 +111,7 @@ const Configurer = {
           this.scriptProps.deleteProperty(`FunctionLocked:${funcName}`);
           success.push(funcName);
         });
-        Logger.log(`Function release: ${funcNames}`);
+        Logger.log(`[Locker] ${funcNames} is unlocked.`);
       },
       
       isLocked: function(funcName) {
@@ -135,6 +135,19 @@ const Configurer = {
         }
       }
     }
+  },
+
+  makeAnotherTrigger: function(funcName, minutes) {
+    // Delete all other trigger "daemonDownloadMedia"
+    var triggers = ScriptApp.getProjectTriggers();
+    for (var i = 0; i < triggers.length; i++) {
+      if (funcName === triggers[i].getHandlerFunction()) {
+        ScriptApp.deleteTrigger(triggers[i]);
+      }
+    }
+    // Create new trigger in next mins
+    const trigger = ScriptApp.newTrigger(funcName).timeBased().after(minutes * 60 * 1000).create();
+    Logger.log(`[${funcName}-${trigger.getUniqueId()}] Start in next ${minutes} mins.`);
   }
 
 }

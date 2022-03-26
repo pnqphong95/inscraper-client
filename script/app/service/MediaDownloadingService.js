@@ -20,16 +20,17 @@ class MediaDownloadingService {
     const models = this.modelRepo.getReadyToDownloadModels(modelCount);
     return this.modelLockingRepo.onModelLocked(models, (items) => {
       return SwissKnife.executeLoopWithTimeout(timeout, items, (model, i, collector) => {
-        const successModel = this.downloadModelMedia(model, timeout);
-        if (successModel) {
-          this.modelRepo.updateModel(successModel, { lastDownloaded: true });
-          collector.success(successModel);
+        const result = this.downloadModelMedia(model, timeout);
+        if (result.successCount() > 0 && result.remainCount() === 0) {
+          this.modelRepo.updateModel(result.successItems[0], { lastDownloaded: true });
         }
+        collector.allSuccess(result.successItems).allRemain(result.remainItems);
       });
     });
   }
 
   downloadModelMedia(model, timeout) {
+    const collector = SwissKnife.collector();
     const downloadRepo = MediaDownloadRepository.instance(model);
     const mediaRepo = ModelMediaRepository.instance(model);
     const medias = downloadRepo.getMediaReadyToDownload();
@@ -37,27 +38,25 @@ class MediaDownloadingService {
       Logger.log(`[${model.Username}] All medias are processed.`);
       // Unlock this model immediately if no media to download
       this.modelLockingRepo.unlockModel(model);
-      return model;
+      return collector.success(model);
     } else {
-      const collector = SwissKnife.collector();
       const photoFolder = DriveApp.getFolderById(model['Photo Folder ID']);
       const partitioned = this._partitionMedia(photoFolder, medias, timeout);
       if (partitioned.existings.length > 0) {
         Logger.log(`[${photoFolder.getName()}] ${partitioned.existings.length} media file exists on Drive ...`);
         const moveResult = this.moveMediaToMediaList(model, mediaRepo, downloadRepo, partitioned.existings, timeout);
         Logger.log(`[${model.Username}] Move ${moveResult.successCount()}/${partitioned.existings.length} medias to Media List ...DONE`);
-        collector.allSuccess(moveResult.successItems);
+        collector.allSuccess(moveResult.successItems).allRemain(moveResult.remainItems);
       }
       if (partitioned.downloads.length > 0) {
         const storeResult = this.downloadToDrive(photoFolder, partitioned.downloads, timeout);
         const moveResult = this.moveMediaToMediaList(model, mediaRepo, downloadRepo, storeResult.successItems, timeout);
         Logger.log(`[${model.Username}] Save ${storeResult.successCount()}/${partitioned.downloads.length} medias to Drive ...DONE`);
         Logger.log(`[${model.Username}] Move ${moveResult.successCount()}/${storeResult.successCount()} medias to Media List ...DONE`);
-        collector.allSuccess(moveResult.successItems);
+        collector.allSuccess(moveResult.successItems).allRemain(moveResult.remainItems);
       }
-      if (collector.successCount() === medias.length) {
-        return model;
-      }
+      if (collector.remainCount() > 0) return collector.remain(model);
+      return collector.success(model);
     }
   }
 

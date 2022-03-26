@@ -36,24 +36,25 @@ class MediaScrapingService {
     return models.filter(model => {
       const followList = model['Followed By'] === '' ? [] : JSON.parse(model['Followed By']);
       const isAccessible = followList.includes(sessionAuth.Username) || model['Private Profile'] === '';
-      if (!isAccessible) Logger.log(`[${model}] Model private profile is inaccessible.`);
+      if (!isAccessible) Logger.log(`[${model.Username}] Model private profile is inaccessible.`);
       return isAccessible;
     });
   }
 
   scrapeMediaSource(models, timeout) {
-    this.modelLockingRepo.onModelLocked(models, (items) => {
-      SwissKnife.executeLoopWithTimeout(timeout, items, (model, i, collector) => {
-        const successModel = this.fetchModelMediaSource(model, timeout);
-        if (successModel) {
-          this.modelRepo.updateModel(successModel, { lastUpdated: true });
-          collector.success(successModel);
+    return this.modelLockingRepo.onModelLocked(models, (items) => {
+      return SwissKnife.executeLoopWithTimeout(timeout, items, (model, i, collector) => {
+        const result = this.fetchModelMediaSource(model, timeout);
+        if (result.successCount() > 0 && result.remainCount() === 0) {
+          this.modelRepo.updateModel(result.successItems[0], { lastUpdated: true });
         }
+        collector.allSuccess(result.successItems).allRemain(result.remainItems);
       });
     });
   }
 
   fetchModelMediaSource(model, timeout) {
+    const collector = SwissKnife.collector();
     const noSourceRepo = MediaNoSourceRepository.instance(model);
     const downloadRepo = MediaDownloadRepository.instance(model);
     const medias = noSourceRepo.getMediaReadyToGetSource();
@@ -61,7 +62,7 @@ class MediaScrapingService {
       Logger.log(`[${model.Username}] All medias are processed.`);
       // Unlock this model immediately if no media to download
       this.modelLockingRepo.unlockModel(model);
-      return model;
+      return collector.success(model);
     } else {
       const options = { timeout, pageSize: 10 };
       const result = SwissKnife.pageableLoopWithOptions(options, medias, (items, collector) => {
@@ -73,10 +74,10 @@ class MediaScrapingService {
         Logger.log(`[${model.Username}] Fetch ${mediasByParent.length}/${medias.length} medias from server. `
           + `Move ${moveResult.successCount()}/${medias.length} medias to Media sheet, `);
         collector.success(moveResult.successItems);
+        if (moveResult.remainCount() > 0) collector.allRemain(items);
       });
-      if (result.successCount() === medias.length) {
-        return model;
-      }
+      if (result.remainCount() > 0) return collector.remain(model);
+      return collector.success(model);
     }
   }
 

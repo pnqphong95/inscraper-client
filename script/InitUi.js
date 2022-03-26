@@ -14,23 +14,17 @@ function onDialogDisplay(callback, modal) {
 
 function scrape_() {
   const modalStart = { html: 'Wait a few minutes to scrape new model medias!' };
-  onDialogDisplay(() => {
-    initialize();
-    services.modelScrapingService.scrapeNotUpdateRecentModels();
-  }, { modalStart });
+  onDialogDisplay(() => daemonScrapeModel(), { modalStart });
 }
 
 function scrapeMediaSource_() {
   const modalStart = { html: 'Wait a few minutes to scrape medias source!' };
-  onDialogDisplay(() => {
-    initialize();
-    services.mediaScrapingService.scrapeNotUpdateRecentModels();
-  }, { modalStart });
+  onDialogDisplay(() => daemonScrapeMediaSource(), { modalStart });
 }
 
 function download_() {
   const modalStart = { html: 'Wait a few minutes to get media download!' };
-  onDialogDisplay(() => downloadInBackground_(), { modalStart });
+  onDialogDisplay(() => daemonDownloadMedia(), { modalStart });
 }
 
 function setupNewModels_() {

@@ -17,7 +17,7 @@ class ModelLockingRepository {
       modelUsernames.push(model.Username);
     });
     props.setProperties(lockModelProps);
-    Logger.log(`[LOCKER] Lock ${modelUsernames.length} models: ${modelUsernames}`);
+    Logger.log(`[Locker] Lock ${modelUsernames.length} models: ${modelUsernames}`);
   }
 
   lockModel(model) {
@@ -39,8 +39,10 @@ class ModelLockingRepository {
       }
       props.deleteProperty(`${containerFileId}:Model_Lock:${model.Username}`);
     });
-    Logger.log(`[LOCKER] Unlock ${unlockUsernames.length} models. \n${unlockUsernames}`);
-    Logger.log(`[LOCKER] Remaining lock: ${props.getKeys().length}`);
+    if (unlockUsernames.length > 0) {
+      Logger.log(`[Locker] Unlock ${unlockUsernames.length} models. \n${unlockUsernames}`);
+    }
+    Logger.log(`[Locker] Remaining lock: ${props.getKeys().length}`);
   }
 
   unlockModel(model) {
