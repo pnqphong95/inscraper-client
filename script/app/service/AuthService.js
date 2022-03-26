@@ -17,12 +17,12 @@ class AuthService {
   }
 
   getUnusedRecentAuth() {
-    const enableAuths = this.authRepo.getActiveAuths();
-    if (enableAuths.length > 0) {
-      const enableValidAuth = AuthService.pickFirstValidAuth(enableAuths);
-      if (enableValidAuth) {
-        this.authRepo.updateAuthLastUsed(enableValidAuth);
-        return enableValidAuth;
+    const activeAuths = this.authRepo.getActiveAuths();
+    if (activeAuths.length > 0) {
+      const activeValidAuth = this.pickFirstValidAuth(activeAuths);
+      if (activeValidAuth) {
+        this.authRepo.updateAuthLastUsed(activeValidAuth);
+        return activeValidAuth;
       } 
     }
     const auths = this.authRepo.getAll();
@@ -38,10 +38,22 @@ class AuthService {
     throw new Error('No auth to pick-up! Please check the config.');
   }
 
-  static pickFirstValidAuth(enableAuths) {
-    for(var i = 0; i < enableAuths.length; i++) {
-      if (AuthService.validAuth(enableAuths[i])) {
-        return enableAuths[i];
+  pickFirstValidAuth(activeAuths) {
+    for(var i = 0; i < activeAuths.length; i++) {
+      const activeAuth = activeAuths[i];
+      if (AuthService.validAuth(activeAuth)) {
+        if (activeAuth['Request Cookie'] && activeAuth['CSRF Token']) {
+          return activeAuth;
+        } else {
+          const username = activeAuth.Username;
+          const password = activeAuth.Password;
+          const authObj = this.authClient.loginServer(username, password);
+          if (authObj) {
+            Logger.log(`Empty authentication record. Attempt to authenticate [${username}] ...DONE`);
+            this.authRepo.updateAuth(activeAuth, authObj);
+            return activeAuth;
+          }
+        }
       }
     }
   }
@@ -50,8 +62,10 @@ class AuthService {
     // Undefined auth object
     if (!authObj) return false;
     
-    // Is no cookie or CSRF token
-    if (!authObj['Request Cookie'] || !authObj['CSRF Token']) return false;
+    if (!authObj['Request Cookie'] || !authObj['CSRF Token']) {
+      // If no cookie or token, auth still valid if contain Username and Password
+      return authObj.Username && authObj.Password;
+    };
     
     // Is auth object expire
     const now = new Date();

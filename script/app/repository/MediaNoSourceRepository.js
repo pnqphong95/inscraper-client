@@ -12,8 +12,9 @@ class MediaNoSourceRepository {
     this.MediaNoSource = Tamotsu.Table.define({ idColumn: 'Media ID', sheetName: 'Media_NoSource', rowShift: 1 });
   }
 
-  getMediaReadyToGetSource() {
-    return this.MediaNoSource.where(media => media['Download URL'] === '').all();
+  getMediaReadyToGetSource(mediaCount) {
+    const medias = this.MediaNoSource.where(media => media['Short Code'] !== '').all();
+    return mediaCount ? medias.slice(0, mediaCount) : medias;
   }
 
   batchCreate(medias) {
@@ -28,6 +29,14 @@ class MediaNoSourceRepository {
       MediaNoSourceRepository.lastUpdated(i);
     });
     return this.MediaNoSource.batchCreate(medias);
+  }
+
+  deleteMediaById(mediaIdToDelete) {
+    const freshMedia = this.MediaNoSource.find(mediaIdToDelete);
+    if (freshMedia) {
+      freshMedia.destroy();
+      return freshMedia;
+    }
   }
 
   static lastUpdated(mediaObj) {

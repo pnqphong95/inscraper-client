@@ -18,8 +18,8 @@ class MediaDownloadingService {
   download(modelCount) {
     const timeout = Configurer.constructTimeout();
     const models = this.modelRepo.getReadyToDownloadModels(modelCount);
-    this.modelLockingRepo.onModelLocked(models, (items) => {
-      SwissKnife.executeLoopWithTimeout(timeout, items, (model, i, collector) => {
+    return this.modelLockingRepo.onModelLocked(models, (items) => {
+      return SwissKnife.executeLoopWithTimeout(timeout, items, (model, i, collector) => {
         const successModel = this.downloadModelMedia(model, timeout);
         if (successModel) {
           this.modelRepo.updateModel(successModel, { lastDownloaded: true });
@@ -35,16 +35,27 @@ class MediaDownloadingService {
     const medias = downloadRepo.getMediaReadyToDownload();
     if (medias.length === 0) {
       Logger.log(`[${model.Username}] All medias are processed.`);
+      // Unlock this model immediately if no media to download
+      this.modelLockingRepo.unlockModel(model);
       return model;
     } else {
+      const collector = SwissKnife.collector();
       const photoFolder = DriveApp.getFolderById(model['Photo Folder ID']);
       const partitioned = this._partitionMedia(photoFolder, medias, timeout);
-      const storeResult = this.downloadToDrive(photoFolder, partitioned.downloads, timeout);
-      const mediasToMove = partitioned.existings.concat(storeResult.successItems);
-      const moveResult = this.moveMediaToMediaList(mediaRepo, downloadRepo, mediasToMove, timeout);
-      Logger.log(`[${model.Username}] ${mediasToMove.length}/${medias.length} medias save to drive. `
-        + `Move ${moveResult.successCount()}/${medias.length} medias to Media sheet, `);
-      if (moveResult.successCount() === medias.length) {
+      if (partitioned.existings.length > 0) {
+        Logger.log(`[${photoFolder.getName()}] ${partitioned.existings.length} media file exists on Drive ...`);
+        const moveResult = this.moveMediaToMediaList(model, mediaRepo, downloadRepo, partitioned.existings, timeout);
+        Logger.log(`[${model.Username}] Move ${moveResult.successCount()}/${partitioned.existings.length} medias to Media List ...DONE`);
+        collector.allSuccess(moveResult.successItems);
+      }
+      if (partitioned.downloads.length > 0) {
+        const storeResult = this.downloadToDrive(photoFolder, partitioned.downloads, timeout);
+        const moveResult = this.moveMediaToMediaList(model, mediaRepo, downloadRepo, storeResult.successItems, timeout);
+        Logger.log(`[${model.Username}] Save ${storeResult.successCount()}/${partitioned.downloads.length} medias to Drive ...DONE`);
+        Logger.log(`[${model.Username}] Move ${moveResult.successCount()}/${storeResult.successCount()} medias to Media List ...DONE`);
+        collector.allSuccess(moveResult.successItems);
+      }
+      if (collector.successCount() === medias.length) {
         return model;
       }
     }
@@ -75,7 +86,7 @@ class MediaDownloadingService {
     });
   }
 
-  moveMediaToMediaList(mediaRepo, downloadRepo, mediasToMove, timeout) {
+  moveMediaToMediaList(model, mediaRepo, downloadRepo, mediasToMove, timeout) {
     const options = { timeout, pageSize: 5 };
     return SwissKnife.pageableLoopWithOptions(options, mediasToMove, (items, collector) => {
       
@@ -86,6 +97,7 @@ class MediaDownloadingService {
       const deleteResult = SwissKnife.executeLoopWithTimeout(timeout, items, deleteFunc);
       const createResult = mediaRepo.batchCreate(deleteResult.successItems);
       collector.allSuccess(createResult);
+      Logger.log(`[${model.Username}] Moved ${collector.successCount()}/${mediasToMove.length} to Media List ...`);
 
     });
   }
@@ -106,7 +118,6 @@ class MediaDownloadingService {
         Logger.log(`[${photoFolder.getName()}] Skip media ${media['Media ID']} because URL parse error.\n${error}`);
       }
     });
-    Logger.log(`[${photoFolder.getName()}] Downloaded ${existings.length}/${medias.length} (existing) ...`);
     return { downloads, existings };
   }
 

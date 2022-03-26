@@ -33,7 +33,10 @@ class MediaDownloadRepository {
 
   deleteMedia(mediaToDelete) {
     const freshMedia = this.MediaDownload.find(mediaToDelete['Media ID']);
-    freshMedia.destroy();
+    if (freshMedia) {
+      freshMedia.destroy();
+      return freshMedia;
+    }
   }
 
   static refreshUrl(mediaObj) {

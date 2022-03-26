@@ -89,6 +89,52 @@ const Configurer = {
       scope: 'Document', containerFileId: this.openContainerFile().getId(), 
       props: PropertiesService.getDocumentProperties() 
     };
+  },
+
+  funcLock: function() {
+    const scriptProps = PropertiesService.getScriptProperties();
+    return {
+      scriptProps,
+      
+      lock: function(funcNames) {
+        const funcNameProps = {};
+        funcNames.forEach(funcName => {
+          funcNameProps[`FunctionLocked:${funcName}`] = true;
+        });
+        this.scriptProps.setProperties(funcNameProps);
+        Logger.log(`Function running: ${funcNames}`);
+      },
+      
+      unlock: function(funcNames) {
+        const success = [];
+        funcNames.forEach(funcName => {
+          this.scriptProps.deleteProperty(`FunctionLocked:${funcName}`);
+          success.push(funcName);
+        });
+        Logger.log(`Function release: ${funcNames}`);
+      },
+      
+      isLocked: function(funcName) {
+        return this.scriptProps.getProperty(`FunctionLocked:${funcName}`) ? true : false;
+      },
+
+      anyFuncLocked: function() {
+        return this.scriptProps.getKeys().find(key => key.startsWith('FunctionLocked:')) ? true : false;
+      },
+
+      onFuncLocked(funcName, callback) {
+        if (!this.isLocked(funcName)) {
+          try {
+            this.lock([funcName]);
+            return callback();
+          } finally {
+            this.unlock([funcName]);
+          }
+        } else {
+          Logger.log(`Can't trigger ${funcName}. Running instance ${funcName} is not finished yet.`);
+        }
+      }
+    }
   }
 
 }

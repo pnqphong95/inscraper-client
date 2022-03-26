@@ -1,109 +1,69 @@
-function scrape10_() {
-  initialize();
-  SpreadsheetApp.getUi().showModalDialog(HtmlService
-    .createHtmlOutput('<p>Wait a few minutes to get new model medias!</p>')
-    .setWidth(900), 'Scraping in process...'
-  );
-  services.modelScrapingService.scrapeNotUpdateRecentModels(10);
-  SpreadsheetApp.getUi().showModalDialog(HtmlService
-    .createHtmlOutput(Logger.getLog().replace(/(?:\r\n|\r|\n)/g, '<br>'))
-    .setWidth(900), 'Scraping finished'
-  );
-}
-
-function scrapeByUsername_() {
-  initialize();
-  const timeout = Configurer.constructTimeout();
-  var ui = SpreadsheetApp.getUi();
-  var response = ui.prompt('Enter model username: ');
-  if (response.getSelectedButton() == ui.Button.OK) {
+function onDialogDisplay(callback, modal) {
+  if (modal && modal.modalStart) {
     SpreadsheetApp.getUi().showModalDialog(HtmlService
-      .createHtmlOutput('<p>Wait a few minutes to get new model medias!</p>')
-      .setWidth(900), 'Scraping in process...'
-    );
-    services.modelScrapingService.scrapeModelsByName(response.getResponseText(), timeout);
-    SpreadsheetApp.getUi().showModalDialog(HtmlService
-      .createHtmlOutput(Logger.getLog().replace(/(?:\r\n|\r|\n)/g, '<br>'))
-      .setWidth(900), 'Scraping finished'
+      .createHtmlOutput(modal.modalStart.html ? modal.modalStart.html : '')
+      .setWidth(900), modal.modalStart.title ? modal.modalStart.title : 'Process started...'
     );
   }
+  callback();
+  SpreadsheetApp.getUi().showModalDialog(HtmlService
+    .createHtmlOutput(Logger.getLog().replace(/(?:\r\n|\r|\n)/g, '<br>'))
+    .setWidth(900), 'Process finished!'
+  );
 }
 
 function scrape_() {
-  initialize();
-  SpreadsheetApp.getUi().showModalDialog(HtmlService
-    .createHtmlOutput('<p>Wait a few minutes to get new model medias!</p>')
-    .setWidth(900), 'Scraping in process...'
-  );
-  services.modelScrapingService.scrapeNotUpdateRecentModels();
-  SpreadsheetApp.getUi().showModalDialog(HtmlService
-    .createHtmlOutput(Logger.getLog().replace(/(?:\r\n|\r|\n)/g, '<br>'))
-    .setWidth(900), 'Scraping finished'
-  );
+  const modalStart = { html: 'Wait a few minutes to scrape new model medias!' };
+  onDialogDisplay(() => {
+    initialize();
+    services.modelScrapingService.scrapeNotUpdateRecentModels();
+  }, { modalStart });
 }
 
-function download10_() {
-  initialize();
-  SpreadsheetApp.getUi().showModalDialog(HtmlService
-    .createHtmlOutput('<p>Wait a few minutes to get media download!</p>')
-    .setWidth(900), 'Download in process...'
-  );
-  services.mediaDownloadingService.download(10);
-  SpreadsheetApp.getUi().showModalDialog(HtmlService
-    .createHtmlOutput(Logger.getLog().replace(/(?:\r\n|\r|\n)/g, '<br>'))
-    .setWidth(900), 'Download finished'
-  );
+function scrapeMediaSource_() {
+  const modalStart = { html: 'Wait a few minutes to scrape medias source!' };
+  onDialogDisplay(() => {
+    initialize();
+    services.mediaScrapingService.scrapeNotUpdateRecentModels();
+  }, { modalStart });
 }
 
 function download_() {
-  initialize();
-  SpreadsheetApp.getUi().showModalDialog(HtmlService
-    .createHtmlOutput('<p>Wait a few minutes to get media download!</p>')
-    .setWidth(900), 'Download in process...'
-  );
-  services.mediaDownloadingService.download();
-  SpreadsheetApp.getUi().showModalDialog(HtmlService
-    .createHtmlOutput(Logger.getLog().replace(/(?:\r\n|\r|\n)/g, '<br>'))
-    .setWidth(900), 'Download finished'
-  );
+  const modalStart = { html: 'Wait a few minutes to get media download!' };
+  onDialogDisplay(() => downloadInBackground_(), { modalStart });
 }
 
 function setupNewModels_() {
-  initialize();
-  SpreadsheetApp.getUi().showModalDialog(HtmlService
-    .createHtmlOutput('<p>Wait a few minutes to setup new models!</p>')
-    .setWidth(900), 'Setting up...'
-  );
-  services.modelDirectoryService.setupModelsDirectory();
-  SpreadsheetApp.getUi().showModalDialog(HtmlService
-    .createHtmlOutput(Logger.getLog().replace(/(?:\r\n|\r|\n)/g, '<br>'))
-    .setWidth(900), 'Setup finished'
-  );
+  const modalStart = { html: 'Wait a few minutes to setup new models!' };
+  onDialogDisplay(() => {
+    initialize();
+    services.modelDirectoryService.setupModelsDirectory();
+  }, { modalStart });
 }
 
 function scanAllModels_() {
-  initialize();
-  SpreadsheetApp.getUi().showModalDialog(HtmlService
-    .createHtmlOutput('<p>Wait a few minutes to setup new models!</p>')
-    .setWidth(900), 'Setting up...'
-  );
-  services.modelDirectoryService.setupModelsDirectory(true);
-  SpreadsheetApp.getUi().showModalDialog(HtmlService
-    .createHtmlOutput(Logger.getLog().replace(/(?:\r\n|\r|\n)/g, '<br>'))
-    .setWidth(900), 'Setup finished'
-  );
+  const modalStart = { html: 'Wait a few minutes to scan all models!' };
+  onDialogDisplay(() => {
+    initialize();
+    services.modelDirectoryService.setupModelsDirectory(true);
+  }, { modalStart });
+}
+
+function cleanup_() {
+  onDialogDisplay(() => {
+    PropertiesService.getDocumentProperties().deleteAllProperties();
+    PropertiesService.getScriptProperties().deleteAllProperties();
+  });
 }
 
 function onOpen() {
-  SpreadsheetApp.getUi().createAddonMenu()
-    .addItem("⬇ Scrape 10-models", "scrape10_")
-    .addItem("⬇ Scrape {username}", "scrapeByUsername_")
-    .addItem("⬇ Scrape all", "scrape_")
+  SpreadsheetApp.getUi().createMenu('InscraperClient')
+    .addItem("🌔 Scrape model", "scrape_")
+    .addItem("🌕 Scrape source", "scrapeMediaSource_")
+    .addItem("📦 Download", "download_")
+    .addItem("📝 Setup new models", "setupNewModels_")
+    .addItem("🗑 Cleanup", "cleanup_")
     .addSeparator()
-    .addItem("⬇ Download 10-models", "download10_")
-    .addItem("⬇ Download all", "download_")
-    .addSeparator()
-    .addItem("🛠 Setup new models", "setupNewModels_")
-    .addItem("🛠 Re-scan models", "scanAllModels_")
+    .addItem("🔍 Re-scan models", "scanAllModels_")
     .addToUi();
 }

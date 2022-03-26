@@ -8,7 +8,7 @@ class AuthClient {
 
   loginServer(username, password) {
     try {
-      const response = UrlFetchApp.fetch(configurationTable.loginUrl, { 
+      const response = UrlFetchApp.fetch(settings.externalConfigs.loginUrl, { 
         method : 'post', contentType: 'application/json',
         payload: JSON.stringify({ username, password }) 
       });

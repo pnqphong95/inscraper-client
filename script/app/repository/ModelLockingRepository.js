@@ -16,21 +16,38 @@ class ModelLockingRepository {
       lockModelProps[`${containerFileId}:Model_Lock:${model.Username}`] = true;
       modelUsernames.push(model.Username);
     });
-    Logger.log(`[${this.propertyService.scope}] Lock ${modelUsernames.length} ` 
-      + `models for processing: ${modelUsernames}`);
     props.setProperties(lockModelProps);
+    Logger.log(`[LOCKER] Lock ${modelUsernames.length} models: ${modelUsernames}`);
+  }
+
+  lockModel(model) {
+    const lockModelProps = {};
+    const props = this.propertyService.props;
+    const containerFileId = this.propertyService.containerFileId;
+    lockModelProps[`${containerFileId}:Model_Lock:${model.Username}`] = true;
+    props.setProperties(lockModelProps);
+    Logger.log(`[${model.Username}] Model is locked.`);
   }
 
   unlockModels(models) {
     const containerFileId = this.propertyService.containerFileId;
     const props = this.propertyService.props;
-    const modelUsernames = [];
+    const unlockUsernames = [];
     models.forEach(model => {
+      if (this.isModelLock(model)) {
+        unlockUsernames.push(model.Username);
+      }
       props.deleteProperty(`${containerFileId}:Model_Lock:${model.Username}`);
-      modelUsernames.push(model.Username);
     });
-    Logger.log(`[${this.propertyService.scope}] ` 
-      + `Unlocked ${modelUsernames.length} models: ${modelUsernames}`);
+    Logger.log(`[LOCKER] Unlock ${unlockUsernames.length} models. \n${unlockUsernames}`);
+    Logger.log(`[LOCKER] Remaining lock: ${props.getKeys().length}`);
+  }
+
+  unlockModel(model) {
+    const props = this.propertyService.props;
+    const containerFileId = this.propertyService.containerFileId;
+    props.deleteProperty(`${containerFileId}:Model_Lock:${model.Username}`);
+    Logger.log(`[${model.Username}] Model is unlocked.`);
   }
 
   isModelLock(model) {

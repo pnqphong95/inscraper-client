@@ -79,6 +79,9 @@ class ModelScrapingService {
       if (model.dataChanged) {
         delete model.scrapeResponse;
         this.modelRepo.updateModel(model, { lastUpdated: true });
+      } else {
+        // Unlock this model immediately if no data changed
+        this.modelLockingRepo.unlockModel(models[i]);
       }
       collector.success(model);
     });
@@ -134,6 +137,32 @@ class ModelScrapingService {
       model['Name'] = newInfo.name;
       model.dataChanged = true;
     }
+    if (model['Private Profile'] === 'YES') {
+      if (!newInfo.is_private) {
+        model['Private Profile'] = '';
+        model.dataChanged = true;
+      }
+    } else {
+      if (newInfo.is_private) {
+        model['Private Profile'] = 'YES';
+        model.dataChanged = true;
+      }
+    }
+    if (model['Followed By'] === '') {
+      model['Followed By'] = JSON.stringify([newInfo.auth_username]);
+      model.dataChanged = true;
+    } else {
+      const followList = JSON.parse(model['Followed By']);
+      if (newInfo.followed_by_auth_user && !followList.includes(newInfo.auth_username)) {
+        followList.push(newInfo.auth_username);
+        model['Followed By'] = JSON.stringify(followList);
+        model.dataChanged = true;
+      }
+      if (!newInfo.followed_by_auth_user && followList.includes(newInfo.auth_username)) {
+        model['Followed By'] = JSON.stringify(followList.filter(i => newInfo.auth_username !== i));
+        model.dataChanged = true;
+      }
+    }
   }
 
   static scrapingRequest(model) {
@@ -146,6 +175,7 @@ class ModelScrapingService {
       payload: Utilities.jsonStringify({
         requestCookie: sessionAuth['Request Cookie'],
         csrfToken: sessionAuth['CSRF Token'],
+        authUsername: sessionAuth.Username,
         last_timeline_media_count: mediaCount
       })
     };

@@ -58,6 +58,10 @@ const SwissKnife = {
         return this.successItems.length;
       },
       
+      remainCount: function() {
+        return this.remainItems.length;
+      },
+      
       success: function(item) {
         this.successItems.push(item);
       },
