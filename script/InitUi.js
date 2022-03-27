@@ -59,5 +59,6 @@ function onOpen() {
     .addItem("🗑 Cleanup", "cleanup_")
     .addSeparator()
     .addItem("🔍 Re-scan models", "scanAllModels_")
+    .addItem("🕥 Schedule run", "scheduleJobs_")
     .addToUi();
 }

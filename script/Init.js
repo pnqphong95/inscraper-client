@@ -14,7 +14,6 @@ function initialize(options) {
     services.modelScrapingService = ModelScrapingService.instance();
     services.mediaScrapingService = MediaScrapingService.instance();
     services.mediaDownloadingService = MediaDownloadingService.instance();
-    services.mediaFileService = MediaFileService.instance();
 
     settings.externalConfigs = services.externalConfigService.validateExternalConfigs();
     settings.appFolders = services.appDefaultInitializer.validateAppWorkspace();
@@ -62,12 +61,28 @@ function daemonDownloadMedia() {
   }
 }
 
-function daemonScanPhotoFolders() {
-  initialize();
-  const result = Configurer.funcLock().onFuncLocked("daemonScanPhotoFolders", 
-    () => services.mediaFileService.scanPhotoFolders());
-  if (result && result.remainCount() > 0) {
-    // Create new trigger in next 3 mins
-    Configurer.makeAnotherTrigger("daemonScanPhotoFolders", 3);
+function scheduledScrapeModel_() {
+  daemonScrapeModel();
+}
+
+function scheduledScrapeMediaSource_() {
+  daemonScrapeMediaSource();
+}
+
+function scheduledDownloadMedia_() {
+  daemonDownloadMedia();
+}
+
+function scheduleJobs_() {
+  const projectTriggers = ScriptApp.getProjectTriggers();
+  const scheduledFuncs = ["scheduleJobs_", "scheduledScrapeModel_","scheduledScrapeMediaSource_","scheduledDownloadMedia_"];
+  for(var i = 0; i < projectTriggers.length; i++) {
+    if (scheduledFuncs.includes(projectTriggers[i].getHandlerFunction())) {
+      ScriptApp.deleteTrigger(projectTriggers[i]);
+    }
   }
+  ScriptApp.newTrigger('scheduledScrapeModel_').timeBased().atHour(02).everyDays(1).create();
+  ScriptApp.newTrigger('scheduledScrapeModel_').timeBased().atHour(11).everyDays(1).create();
+  ScriptApp.newTrigger('scheduledScrapeMediaSource_').timeBased().atHour(17).nearMinute(30).everyDays(1).create();
+  ScriptApp.newTrigger('scheduledDownloadMedia_').timeBased().atHour(21).everyDays(1).create();
 }

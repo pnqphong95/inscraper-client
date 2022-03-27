@@ -40,8 +40,9 @@ const SwissKnife = {
     if (!list || !processFunc) return collector;
     for(var i = 0; i < list.length; i++) {
       if (timeout && timeout <= new Date()) {
-        const undones = list.filter(item => !dones.includes(item));
-        collector.allRemain(undones);
+        collector.allRemain(list.filter(item => 
+          !dones.includes(item) && !collector.remainItems.includes(item))
+        );
         break;
       }
       const item = list[i];
@@ -94,6 +95,20 @@ const SwissKnife = {
       }
 
     }
+  },
+
+  timestampToDateStr(timestamp) {
+    const date = new Date(timestamp * 1000);
+    let mm = date.getMonth() + 1;
+    let dd = date.getDate();
+    if (mm < 10) mm = '0' + mm; 
+    if (dd < 10) dd = '0' + dd;
+    return date.getFullYear() + '' + mm + '' + dd;
+  },
+
+  prefixesByTimestamp(original, timestamp) {
+    const datePostedStr = this.timestampToDateStr(timestamp);
+    return 'TS_'.concat(datePostedStr, '_', original);
   }
 
 }

@@ -25,8 +25,9 @@ class ModelScrapingService {
   }
 
   scrapeNotUpdateRecentModels(modelCount) {
+    const configuredCount = modelCount || settings.externalConfigs.SCRAPING_MODEL_COUNT;
     const timeout = Configurer.constructTimeout();
-    const models = this.modelRepo.getReadyToScrapeModels(modelCount);
+    const models = this.modelRepo.getReadyToScrapeModels(configuredCount);
     return this.scrapeModels(models, timeout);
   }
 
@@ -168,7 +169,7 @@ class ModelScrapingService {
     const sessionAuth = Configurer.sessionAuth();
     const mediaCount = model['Timeline Media Count'] || 0;
     return {
-      url: `${settings.externalConfigs.userUrl}/${model.Username}`,
+      url: `${settings.externalConfigs.USER_URL}/${model.Username}`,
       method: 'post',
       contentType: 'application/json',
       payload: Utilities.jsonStringify({

@@ -1,8 +1,8 @@
 const REQUIRED_CONFIGS = {
-  loginUrl: '',
-  userUrl: '',
-  mediaUrl: '',
-  rootMediaFolderId: ''
+  LOGIN_URL: '',
+  USER_URL: '',
+  MEDIA_URL: '',
+  ROOT_MEDIA_FOLDER: ''
 }
 Object.freeze(REQUIRED_CONFIGS);
 

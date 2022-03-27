@@ -12,7 +12,7 @@ var settings = {
 };
 var defaultSettings = {
   externalConfigs: {
-    executionTimeout: 300000
+    EXECUTION_TIMEOUT: 300000
   }
 }
 
@@ -70,8 +70,8 @@ const Configurer = {
   },
 
   constructTimeout: function(timout) {
-    const configuredTimeout = settings.externalConfigs.executionTimeout;
-    const defaultTimeout = defaultSettings.externalConfigs.executionTimeout;
+    const configuredTimeout = settings.externalConfigs.EXECUTION_TIMEOUT;
+    const defaultTimeout = defaultSettings.externalConfigs.EXECUTION_TIMEOUT;
     const value = new Date(new Date().getTime() + Number(timout || configuredTimeout || defaultTimeout));
     Logger.log(`[Timer] Timeout at ` + value.toISOString());
     return value;

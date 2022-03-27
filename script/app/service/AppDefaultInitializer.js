@@ -22,7 +22,7 @@ class AppDefaultInitializer {
   }
 
   getRootMediaFolder() {
-    const rootMediaFolderId = settings.externalConfigs.rootMediaFolderId;
+    const rootMediaFolderId = settings.externalConfigs.ROOT_MEDIA_FOLDER;
     try {
       return DriveApp.getFolderById(rootMediaFolderId);
     } catch (e) {
@@ -59,7 +59,7 @@ class AppDefaultInitializer {
 
   static get errorMessages() {
     return {
-      rootMediaFolderInvalid: (id, stack) => `Provided config key [rootMediaFolderId=${id}] is invalid. ` 
+      rootMediaFolderInvalid: (id, stack) => `Provided config key [ROOT_MEDIA_FOLDER=${id}] is invalid. ` 
         + `The folder is not exist or you dont have access.\n${stack}`
     }
   }

@@ -25,9 +25,10 @@ class MediaScrapingService {
   }
 
   scrapeNotUpdateRecentModels(modelCount) {
+    const configuredCount = modelCount || settings.externalConfigs.SCRAPING_MEDIA_SOURCE_COUNT;
     const timeout = Configurer.constructTimeout();
     const sessionAuth = Configurer.sessionAuth();
-    const models = this.modelRepo.getReadyToScrapeModels(modelCount);
+    const models = this.modelRepo.getReadyToScrapeModels(configuredCount);
     const accessibleModels = this.filterAccessibleModels(models, sessionAuth);
     return this.scrapeMediaSource(accessibleModels, timeout);
   }
@@ -87,7 +88,7 @@ class MediaScrapingService {
     if (timeout && timeout <= new Date()) return collector;
     try {
       const requestBody = MediaScrapingService.scrapingMediaRequest(inputShortCodes);
-      const response = UrlFetchApp.fetch(settings.externalConfigs.mediaUrl, requestBody);
+      const response = UrlFetchApp.fetch(settings.externalConfigs.MEDIA_URL, requestBody);
       if (response.getResponseCode() === 200) {
         const mediaData = JSON.parse(response.getContentText());
         // Collector pick-up success (mediaData.data) and error (mediaData.error_remains)

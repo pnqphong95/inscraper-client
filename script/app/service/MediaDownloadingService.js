@@ -16,8 +16,9 @@ class MediaDownloadingService {
   }
 
   download(modelCount) {
+    const configuredCount = modelCount || settings.externalConfigs.DOWNLOAD_MEDIA_COUNT;
     const timeout = Configurer.constructTimeout();
-    const models = this.modelRepo.getReadyToDownloadModels(modelCount);
+    const models = this.modelRepo.getReadyToDownloadModels(configuredCount);
     return this.modelLockingRepo.onModelLocked(models, (items) => {
       return SwissKnife.executeLoopWithTimeout(timeout, items, (model, i, collector) => {
         const result = this.downloadModelMedia(model, timeout);
@@ -70,6 +71,8 @@ class MediaDownloadingService {
         SwissKnife.executeLoopWithTimeout(timeout, responses, (resp, i) => {
           if (resp.getResponseCode() === 200) {
             const mediaFile = photoFolder.createFile(resp.getBlob());
+            this._updateMediaTimestamp(modelFolName, items[i], mediaFile);
+            mediaFile.setDescription(items[i]['Caption']);
             items[i]['Drive ID'] = mediaFile.getId();
             collector.success(items[i]);
           } else {
@@ -105,7 +108,7 @@ class MediaDownloadingService {
     var downloads = [], existings = [];
     SwissKnife.executeLoopWithTimeout(timeout, medias, (media) => {
       try {
-        const nameWithExtension = this._fileNameFromUrl(media['Download URL']);
+        const nameWithExtension = this._mediaNameFromUrlAndTimestamp(media);
         const matches = photoFolder.getFilesByName(nameWithExtension);
         if (matches.hasNext()) {
           media['Drive ID'] = matches.next().getId();
@@ -126,6 +129,30 @@ class MediaDownloadingService {
       urlParts = urlParts[0].split('/');
       if (urlParts.length > 0) {
         return urlParts[urlParts.length - 1];
+      }
+    }
+  }
+
+  _mediaNameFromUrlAndTimestamp(media) {
+    const nameWithExtension = this._fileNameFromUrl(media['Download URL']);
+    if (!nameWithExtension.startsWith('TS')) {
+      if (media['Timestamp']) {
+        return SwissKnife.prefixesByTimestamp(nameWithExtension, media['Timestamp']);
+      }
+    }
+    return nameWithExtension;
+  }
+
+  _updateMediaTimestamp(modelName, media, mediaFile) {
+    if (mediaFile && !mediaFile.getName().startsWith('TS')) {
+      const oldFileName = mediaFile.getName();
+      const timestamp = media['Timestamp'];
+      if (timestamp) {
+        const newFileName = SwissKnife.prefixesByTimestamp(oldFileName, timestamp);
+        mediaFile.setName(newFileName);
+        return mediaFile;
+      } else {
+        Logger.log(`[${modelName}] Media ${media['Short Code']} doesn't have timestamp.`);
       }
     }
   }

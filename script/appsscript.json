@@ -6,14 +6,13 @@
     "libraries": [
       {
         "userSymbol": "LodashGS",
-        "version": "6",
-        "libraryId": "1SQ0PlSMwndIuOAgtVJdjxsuXueECtY9OGejVDS37ckSVbMll73EXf2PW"
+        "libraryId": "1SQ0PlSMwndIuOAgtVJdjxsuXueECtY9OGejVDS37ckSVbMll73EXf2PW",
+        "version": "6"
       },
       {
         "userSymbol": "Tamotsu",
         "libraryId": "1MFS_u3l2Yk7qr6X66memMMHgKJx_19_EJCrisj9xBPC1vCfyhcZ4i-Jg",
-        "version": "0",
-        "developmentMode": true
+        "version": "4"
       }
     ]
   }
