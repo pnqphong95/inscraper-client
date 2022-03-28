@@ -1,34 +1,13 @@
-# Foobar
+# Inscraper Client
 
-Foobar is a Python library for dealing with word pluralization.
+Inscraper Client is a Google Spreadsheet add-on automatically fetch Instagram user photos, videos and keep track in a spreadsheet. It is a Google App Script project written in Javascript. _I write this project for learning purpose only_.  
 
-## Installation
+![](docs/overview.png)
 
-Use the package manager [pip](https://pip.pypa.io/en/stable/) to install foobar.
+## How it works
 
-```bash
-pip install foobar
-```
-
-## Usage
-
-```python
-import foobar
-
-# returns 'words'
-foobar.pluralize('word')
-
-# returns 'geese'
-foobar.pluralize('goose')
-
-# returns 'phenomenon'
-foobar.singularize('phenomena')
-```
-
-## Contributing
-Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
-
-Please make sure to update tests as appropriate.
-
-## License
-[MIT](https://choosealicense.com/licenses/mit/)
+This add-on is integrated with an "Insraper Master Sheet" as we can see above.  
+So to use this, we need to **clone the master sheet**, step-by-steps **define configuration, authentication and all your favorite idols**.  
+  
+If every was fine, the add-on provide you few command on the media to fetch, download the photos and videos. All of this will store in your Google Drive folder.
+![](docs/photo_folder.png)
