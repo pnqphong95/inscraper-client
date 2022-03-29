@@ -14,7 +14,7 @@ class MediaDownloadRepository {
 
   getMediaReadyToDownload(mediaCount) {
     const medias = this.MediaDownload.where(media => MediaDownloadRepository.isMediaHasSource(media)).all();
-    return mediaCount ? medias.slice(0, mediaCount) : medias; // medias.slice(0, Math.min(50, medias.length))
+    return mediaCount ? medias.slice(0, mediaCount) : medias.slice(0, Math.min(100, medias.length));
   }
 
   batchCreate(medias) {

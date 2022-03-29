@@ -14,7 +14,7 @@ class MediaNoSourceRepository {
 
   getMediaReadyToGetSource(mediaCount) {
     const medias = this.MediaNoSource.where(media => media['Short Code'] !== '').all();
-    return mediaCount ? medias.slice(0, mediaCount) : medias;
+    return mediaCount ? medias.slice(0, mediaCount) : medias.slice(0, Math.min(100, medias.length));;
   }
 
   batchCreate(medias) {
